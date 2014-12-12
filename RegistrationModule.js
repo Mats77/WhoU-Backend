@@ -31,24 +31,21 @@ var init = function () {
 
 var register = function (req, res) {
     res.type('text/plain')
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With")
-    console.log('Req angekommen')
     if (req.body['username'] != null && req.body['password'] != null && req.body['mail'] != null) {
         console.log('in der if')
         var user = new UserModel({
             username: req.body.username,
             password: req.body.password,
-            mail: req.body.mail,
-            picture: {
-                data: fs.readFileSync('/home/whou/Data/Weihnachtsbaum.jpg'),
-                contentType: 'image'
-            }
+            mail: req.body.mail //,
+            //            picture: {
+            //                data: fs.readFileSync('/home/whou/Data/Weihnachtsbaum.jpg'),
+            //                contentType: 'image'
+            //            }
         })
         user.save(function (err) {
             if (!err) {
                 console.log('User erstellt mit der id: ' + user.id)
-                res.send(user.id) //Everything worked, send Back UserId
+                res.send("" + user.id) //Everything worked, send Back UserId
             } else {
                 console.log(err)
                 res.send('-100') //DB-Connection Error

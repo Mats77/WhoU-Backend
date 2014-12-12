@@ -17,8 +17,6 @@ var init = function () {
 
 var loginWithMail = function (req, res) {
     res.type('text/plain')
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With");
     var credentials = req.body
     var sessionkey = Math.random() * 1e20
 
@@ -32,12 +30,18 @@ var loginWithMail = function (req, res) {
             return console.err
         } else if (user == null) {
             console.log('No User found')
-            return res.send(-3) //No User Found
+            return res.send('-3') //No User Found
         } else {
             user.sessionkey = sessionkey
             user.save(function (err) {
-                if (err) return console.log(err)
-                res.send('SK' + sessionkey)
+                if (err) {
+                    res.send('-4')
+                    return console.log(err)
+                }
+                res.send({
+                    'UID': user._id,
+                    'SessionKey': sessionkey.toString()
+                })
             })
         }
     })
@@ -46,13 +50,12 @@ var loginWithMail = function (req, res) {
 var loginWithSessionKey = function (req, res) {
     res.type('text/plain')
     var credentials = req.body
-    console.log(credentials)
     UserModel.findOne({
         _id: credentials._id,
         sessionkey: credentials.sessionkey
     }, function (err, user) {
         if (err) {
-            res.send('-100')
+            res.send(err)
             return console.err
         } else if (user == null) {
             res.send('-4') //No User found
