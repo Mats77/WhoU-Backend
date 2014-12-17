@@ -9,14 +9,26 @@ var cors = require('cors')
 //ports and paths
 const port = 61234
 const newUserPath = '/newUser'
-const loginWithMailPath = '/login/mail'
+const loginWithMailPath = '/login/mail/'
 const loginWithSessionKeyPath = '/login/sessionkey'
 const searchPartnerToPlayWithPath = '/play'
+const gamesToRatePath = '/play/rating/gamesToRate'
+const insertNewRatingPath = '/play/rating/insertNewRating'
+const allItemsPath = '/benefit/allItems'
+const buyItemPath = '/benefit/buyItem'
+const userDataPath = '/userData/data'
+const recentEventsPath = '/userData/recentEvents'
+const changeModusPath = '/userData/changeModus'
+const updateGPSPath = '/userData/updateGPS'
+const newPhotoPath = '/photo/saveNew'
+const deletePhotoPath = 'photo/delete'
+const logOutPath = '/logout'
 
 //Implement each module
 const playModule = require('./PlayModule')
 const registrationModule = require('./RegistrationModule')
 const loginModule = require('./LoginModule')
+const userDataModule = require('./UserDataModule')
 registrationModule.init() //First!!!
 playModule.init()
 loginModule.init()
@@ -34,16 +46,60 @@ app.post(newUserPath, cors(), function (req, res, next) {
     registrationModule.register(req, res)
 })
 
-app.post(loginWithMailPath, cors(), function (req, res, next) {
+app.get(loginWithMailPath, cors(), function (req, res, next) {
     loginModule.loginWithMail(req, res)
 })
 
-app.post(loginWithSessionKeyPath, cors(), function (req, res, next) {
+app.get(loginWithSessionKeyPath, cors(), function (req, res, next) {
     loginModule.loginWithSessionKey(req, res)
 })
 
 app.post(searchPartnerToPlayWithPath, cors(), function (req, res, next) {
     playModule.play(req, res)
+})
+
+app.get(userDataPath, function (req, res, next) {
+    res.send(-9999)
+})
+
+app.get(recentEventsPath, cors(), function (req, res, next) {
+    res.send(-9999)
+})
+
+app.put(newPhotoPath, cors(), function (req, res, next) {
+    res.send(-9999)
+})
+
+app.delete(deletePhotoPath, cors(), function (req, res, next) {
+    res.send(-9999)
+})
+
+app.put(logOutPath, cors(), function (req, res, next) {
+    res.send(-9999)
+})
+
+app.put(changeModusPath, cors(), function (req, res, next) {
+    res.send(-9999)
+})
+
+app.put(updateGPSPath, cors(), function (req, res, next) {
+    res.send(-9999)
+})
+
+app.get(gamesToRatePath, cors(), function (req, res, next) {
+    res.send(-9999)
+})
+
+app.post(insertNewRatingPath, cors(), function (req, res, next) {
+    res.send(-9999)
+})
+
+app.get(allItemsPath, cors(), function (req, res, next) {
+    res.send(-9999)
+})
+
+app.post(buyItemPath, cors(), function (req, res, next) {
+    res.send(-9999)
 })
 
 app.get('/test', function (req, res, next) {

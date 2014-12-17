@@ -20,6 +20,7 @@ var init = function () {
             longitude: Number,
             latitude: Number,
             modus: Number,
+            coins: Number,
             picture: {
                 data: Buffer,
                 contentType: String

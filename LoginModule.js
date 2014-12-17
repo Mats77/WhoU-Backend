@@ -17,7 +17,10 @@ var init = function () {
 
 var loginWithMail = function (req, res) {
     res.type('text/plain')
-    var credentials = req.body
+    var credentials = {
+        'mail': req.param('mail'),
+        'password': req.param('password')
+    }
     var sessionkey = Math.random() * 1e20
 
     UserModel.findOne({
@@ -49,7 +52,10 @@ var loginWithMail = function (req, res) {
 
 var loginWithSessionKey = function (req, res) {
     res.type('text/plain')
-    var credentials = req.body
+    var credentials = {
+        '_id': req.param('_id'),
+        'sessionkey': req.param('sessionkey')
+    }
     UserModel.findOne({
         _id: credentials._id,
         sessionkey: credentials.sessionkey
