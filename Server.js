@@ -29,9 +29,11 @@ const playModule = require('./PlayModule')
 const registrationModule = require('./RegistrationModule')
 const loginModule = require('./LoginModule')
 const userDataModule = require('./UserDataModule')
+
 registrationModule.init() //First!!!
-playModule.init()
+playModule.init() //second!!
 loginModule.init()
+userDataModule.init()
 
 var app = express()
 
@@ -59,47 +61,47 @@ app.post(searchPartnerToPlayWithPath, cors(), function (req, res, next) {
 })
 
 app.get(userDataPath, function (req, res, next) {
-    res.send(-9999)
+    userDataModule.getUserData(req, res)
 })
 
 app.get(recentEventsPath, cors(), function (req, res, next) {
-    res.send(-9999)
+    userDataModule.getRecentEvents(req, res)
 })
 
 app.put(newPhotoPath, cors(), function (req, res, next) {
-    res.send(-9999)
+    res.send('-9999')
 })
 
 app.delete(deletePhotoPath, cors(), function (req, res, next) {
-    res.send(-9999)
+    res.send('-9999')
 })
 
 app.put(logOutPath, cors(), function (req, res, next) {
-    res.send(-9999)
+    loginModule.logout(req, res)
 })
 
 app.put(changeModusPath, cors(), function (req, res, next) {
-    res.send(-9999)
+    userDataModule.changeModus(req, res)
 })
 
 app.put(updateGPSPath, cors(), function (req, res, next) {
-    res.send(-9999)
+    userDataModule.updateGPS(req, res)
 })
 
 app.get(gamesToRatePath, cors(), function (req, res, next) {
-    res.send(-9999)
+    res.send('-9999')
 })
 
-app.post(insertNewRatingPath, cors(), function (req, res, next) {
-    res.send(-9999)
+app.put(insertNewRatingPath, cors(), function (req, res, next) {
+    playModule.handleRating(req, res)
 })
 
 app.get(allItemsPath, cors(), function (req, res, next) {
-    res.send(-9999)
+    res.send('-9999')
 })
 
 app.post(buyItemPath, cors(), function (req, res, next) {
-    res.send(-9999)
+    res.send('-9999')
 })
 
 app.get('/test', function (req, res, next) {

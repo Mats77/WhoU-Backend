@@ -37,7 +37,9 @@ var register = function (req, res) {
         var user = new UserModel({
             username: req.body.username,
             password: req.body.password,
-            mail: req.body.mail //,
+            mail: req.body.mail,
+            coins: 0,
+            visible: 1 //,
             //            picture: {
             //                data: fs.readFileSync('/home/whou/Data/Weihnachtsbaum.jpg'),
             //                contentType: 'image'

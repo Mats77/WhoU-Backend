@@ -1,4 +1,4 @@
-var login = require('./LoginModule')
+var serverAPI = require('./serverAPI')
 
 exports.testSomething = function (test) {
     test.expect(1)
@@ -11,7 +11,13 @@ exports.testSomethingElse = function (test) {
     test.done()
 }
 
-exports.testSomethingElse = function (test) {
-    test.ok(login.loginWithSessionKey('abc', 'bcd', 'def'), "this assertion should pass too")
+exports.testLogin = function (test) {
+    var req = {}
+    req.param = {
+
+    }
+    serverAPI.loginWithMail("dummy@dummy.de", "dummy", function (data) {
+        test.ok(data > 100000000000, "SessionID passt")
+    })
     test.done()
 }

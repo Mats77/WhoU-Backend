@@ -72,6 +72,32 @@ var loginWithSessionKey = function (req, res) {
     })
 }
 
+var logout = function (req, res) {
+    UserModel.findOne({
+        mail: credentials.mail,
+        password: credentials.password
+    }, function (err, user) {
+        if (err) {
+            console.err
+            res.send('-100') //Error with database Connection
+            return console.err
+        } else if (user == null) {
+            console.log('No User found')
+            return res.send('-3') //No User Found
+        } else {
+            user.sessionkey = null
+            user.save(function (err) {
+                if (err) {
+                    res.send('-4')
+                    return console.log(err)
+                }
+                res.send('1')
+            })
+        }
+    })
+}
+
 exports.loginWithMail = loginWithMail
 exports.loginWithSessionKey = loginWithSessionKey
+exports.logout = logout
 exports.init = init

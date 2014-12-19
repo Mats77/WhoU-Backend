@@ -1,10 +1,17 @@
 const request = require('request')
-const host = 'http://whou.sabic.uberspace.de'
+const host = 'http://whou.sabic.uberspace.de/api'
 const port = 443
-const newUserPath = '/api/newUser'
-const loginWithUsernamePath = '/api/login/username'
-const loginWithSessionKeyPath = '/api/login/sessionkey'
-const searchPartnerToPlayWithPath = '/api/play'
+const gamesToRatePath = '/play/rating/gamesToRate'
+const insertNewRatingPath = '/play/rating/insertNewRating'
+const allItemsPath = '/benefit/allItems'
+const buyItemPath = '/benefit/buyItem'
+const userDataPath = '/userData/data'
+const recentEventsPath = '/userData/recentEvents'
+const changeModusPath = '/userData/changeModus'
+const updateGPSPath = '/userData/updateGPS'
+const newPhotoPath = '/photo/saveNew'
+const deletePhotoPath = 'photo/delete'
+const logOutPath = '/logout'
 
 
 function createNewUser(name, pwd, mail) {
@@ -47,18 +54,31 @@ function createNewUser(name, pwd, mail) {
     //        console.log(body)
     //        return body
     //    })
+    //
+    //    console.log(host + newUserPath)
+    //    request.post(host + newUserPath, {
+    //        form: newUser
+    //    }, function (err, response, body) {
+    //        if (err) {
+    //            console.log(err)
+    //            return -1 //Connection Error
+    //        }
+    //        console.log(body)
+    //        return body
+    //    })
+}
 
-    console.log(host + newUserPath)
-    request.post(host + newUserPath, {
-        form: newUser
-    }, function (err, response, body) {
-        if (err) {
-            console.log(err)
-            return -1 //Connection Error
-        }
-        console.log(body)
-        return body
+var getUserData = function (userId, callback) {
+    request.get()
+    $http({
+        url: host + userDataPath,
+        method: 'GET',
+        params: userId
+    }).success(callback).error(function (data) {
+        console.log(data)
     })
 }
 
-createNewUser(123121.123122, 12222.1223, '54844b303f3f588c0fdaeefa')
+getUserData(123111213312212, function (data) {
+    console.log(data)
+})

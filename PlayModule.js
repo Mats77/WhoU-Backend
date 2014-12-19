@@ -17,6 +17,8 @@ var init = function () {
         var gameSchema = mongoose.Schema({
             userSearching: String,
             userFound: String,
+            ratedByUserSearched: Number,
+            ratedByUserFound: Number
         })
         GameModel = mongoose.model('Game', gameSchema)
     })
@@ -25,9 +27,11 @@ var init = function () {
 var play = function (req, res) {
     var searchRequest = req.body
     res.type('text/plain')
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    UserModel.findOne(function (err, user) {
+    UserModel.findOne({
+        _id: {
+            '$ne': searchRequest._id
+        }
+    }, function (err, user) {
         if (err) {
             console.log(err)
             res.send('-100') //Database connection error
@@ -61,10 +65,38 @@ var play = function (req, res) {
     })
 }
 
+var handleRating = function (req, res) {
+    var _id = req._id
+    var coins = req.coins
+
+    UserModel.findOne({
+        _id: _id
+    }, function (err, user) {
+        if (err) {
+            console.err
+            res.send('-100') //Error with database Connection
+            return console.err
+        } else if (user == null) {
+            console.log('No User found')
+            return res.send('-3') //No User Found
+        } else {
+            if (user.coins != null)
+                user.coins += coins
+            else
+                user.coins = coins
+            user.save(function (err) {
+                if (err) {
+                    res.send('-4')
+                    return console.log(err)
+                }
+                res.send('1')
+            })
+        }
+    })
+}
+
 var photoTest = function (req, res) {
     res.type('text/plain')
-    res.header('Access-Control-Allow-Origin', '*')
-    res.header('Access-Control-Allow-Headers', 'X-Requested-With')
     res.sendFile('/home/whou/Data/Weihnachtsbaum.jpg')
 }
 
@@ -90,5 +122,6 @@ function distance(lat1, lon1, lat2, lon2, unit) {
 
 
 exports.play = play
+exports.handleRating = handleRating
 exports.init = init
 exports.photoTest = photoTest
