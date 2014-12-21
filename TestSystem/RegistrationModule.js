@@ -38,6 +38,8 @@ var register = function (req, res) {
             username: req.body.username,
             password: req.body.password,
             mail: req.body.mail,
+            longitude: req.body.longitude,
+            latitude: req.body.latitude,
             coins: 0,
             visible: 1 //,
             //            picture: {

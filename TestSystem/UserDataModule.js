@@ -144,8 +144,18 @@ var updateGPS = function (req, res) {
     })
 }
 
+var savePhoto = function (req, res) {
+    res.send('-9999')
+}
+
+var deletePhoto = function (req, res) {
+    res.send('-9999')
+}
+
 exports.init = init
 exports.getUserData = getUserData
 exports.getRecentEvents = getRecentEvents
 exports.changeModus = changeModus
 exports.updateGPS = updateGPS
+exports.savePhoto = savePhoto
+exports.deletePhoto = deletePhoto

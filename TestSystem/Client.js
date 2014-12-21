@@ -23,14 +23,16 @@ var sessionKey = 0
 var testCount = 0
 var successfullCount = 0
 var failureCount = 0
-var testShouldBeFinished = 14
+var testShouldBeFinished = 16
 
-function createNewUser(name, pwd, mail) {
+function createNewUser(name, pwd, mail, longitude, latitude) {
     testCount++
     var user = {
         'username': name,
         'password': pwd,
-        'mail': mail
+        'mail': mail,
+        'longitude': longitude,
+        'latitude': latitude
     }
 
     request.post(host + port + newUserPath, {
@@ -53,6 +55,8 @@ function createNewUser(name, pwd, mail) {
         insertNewRating(userId, 50)
         updateGPS(userId, 10, 10)
         buyItem(userId, 0, 0)
+        savePhoto(userId, "123g87oerghf8owcz4np8z34xm984czn534p834ünv5npzc25nnz938p4f5nüu13p8")
+        deletePhoto(userId, 1)
     })
 }
 
@@ -346,6 +350,50 @@ var getGamesToRate = function (userId) {
             return
         }
         console.log('Everything alright with gamesToRate: ' + data)
+        successfullCount++
+        printResult()
+    })
+}
+
+var savePhoto = function (userId, photoString) {
+    testCount++
+    var photoData = {
+        '_id': userId,
+        'photo': photoString,
+    }
+    request.post(host + port + newPhotoPath, {
+        form: photoData
+    }, function (err, response, data) {
+        if (err || data < 0) {
+            console.log(err + data)
+            console.error('SAVE NEW PHOTO BROKE DOWN')
+            failureCount++
+            printResult()
+            return
+        }
+        console.log('Everything alright with savePhoto: ' + data)
+        successfullCount++
+        printResult()
+    })
+}
+
+var deletePhoto = function (userId, photoId) {
+    testCount++
+    var deletePhotoRequest = {
+        'UID': userId,
+        'PID': photoId
+    }
+    request.del(host + port + deletePhotoPath, {
+        form: deletePhotoRequest
+    }, function (err, response, data) {
+        if (err || data < 0) {
+            console.log(err + data)
+            console.error('DELETE PHOTO BROKE DOWN')
+            failureCount++
+            printResult()
+            return
+        }
+        console.log('Everything alright with deletePhoto: ' + data)
         successfullCount++
         printResult()
     })
