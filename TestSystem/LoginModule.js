@@ -3,7 +3,7 @@ var db
 var UserModel
 
 var init = function () {
-    mongoose.connect('mongodb://Mats:MobileProject.123@localhost:20766/whoU')
+    mongoose.connect('mongodb://localhost:27017/whoU')
     db = mongoose.connection
     db.on('error', function (err) {
         console.log(err)
