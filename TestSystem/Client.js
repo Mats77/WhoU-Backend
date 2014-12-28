@@ -14,7 +14,7 @@ const recentEventsPath = '/userData/recentEvents'
 const changeModusPath = '/userData/changeModus'
 const updateGPSPath = '/userData/updateGPS'
 const newPhotoPath = '/photo/saveNew'
-const deletePhotoPath = 'photo/delete'
+const deletePhotoPath = '/photo/delete'
 const logOutPath = '/logout'
 const deleteUserPath = '/delete'
 
@@ -46,7 +46,7 @@ function createNewUser(name, pwd, mail, longitude, latitude) {
             return
         } //Connection-Error
         userId = body
-        console.log('Everything alrigth with createNewUser: ' + body)
+        console.log('Everything alright with createNewUser: ' + body)
         successfullCount++
         printResult()
         searchPartnerToPlayWith(userId)
@@ -54,7 +54,6 @@ function createNewUser(name, pwd, mail, longitude, latitude) {
         changeModus(userId, 1)
         insertNewRating(userId, 50)
         updateGPS(userId, 10, 10)
-        buyItem(userId, 0, 0)
         savePhoto(userId, "123g87oerghf8owcz4np8z34xm984czn534p834ünv5npzc25nnz938p4f5nüu13p8")
         deletePhoto(userId, 1)
     })
@@ -76,7 +75,7 @@ var logUserInWithMail = function (mail, password) {
             printResult()
             return
         }
-        console.log('Everything alrigth with loginWithMail: ' + body)
+        console.log('Everything alright with loginWithMail: ' + body)
         sessionKey = JSON.parse(body).SessionKey
         successfullCount++
         printResult()
@@ -148,7 +147,7 @@ var getAllBenefits = function () {
             console.log(err || JSON.parse(data).length != 2)
             console.error('GET ALL ITEMS BROKE DOWN')
             failureCount++
-            printResult
+            printResult()
             return
         }
         console.log('Everything alright with getAllItems: ' + data)
@@ -242,6 +241,7 @@ var insertNewRating = function (userId, coins) {
         console.log('Everything alright with InsertNewRating: ' + data)
         successfullCount++
         printResult()
+        buyItem(userId, 1, 1)
     })
 }
 
@@ -293,7 +293,7 @@ var updateGPS = function (userId, longitude, latitude) {
 var buyItem = function (userId, benefitId, count) {
     testCount++
     var buyRequest = {
-        'UID': userId,
+        '_id': userId,
         'BID': benefitId,
         'count': count
     }

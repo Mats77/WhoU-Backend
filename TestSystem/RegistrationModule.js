@@ -22,10 +22,8 @@ var init = function () {
             modus: Number,
             coins: Number,
             visisble: Number,
-            picture: {
-                data: Buffer,
-                contentType: String
-            }
+            pictures: Array,
+            benefits: Array
         })
         UserModel = mongoose.model('User', userSchema)
     })
@@ -41,11 +39,9 @@ var register = function (req, res) {
             longitude: req.body.longitude,
             latitude: req.body.latitude,
             coins: 0,
-            visible: 1 //,
-            //            picture: {
-            //                data: fs.readFileSync('/home/whou/Data/Weihnachtsbaum.jpg'),
-            //                contentType: 'image'
-            //            }
+            visible: 1,
+            picturs: [],
+            benefits: []
         })
         user.save(function (err) {
             if (!err) {

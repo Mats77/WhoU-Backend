@@ -39,11 +39,9 @@ var register = function (req, res) {
             password: req.body.password,
             mail: req.body.mail,
             coins: 0,
-            visible: 1 //,
-            //            picture: {
-            //                data: fs.readFileSync('/home/whou/Data/Weihnachtsbaum.jpg'),
-            //                contentType: 'image'
-            //            }
+            visible: 1,
+            longitude: req.body.longitude,
+            latitude: req.body.latitude
         })
         user.save(function (err) {
             if (!err) {
