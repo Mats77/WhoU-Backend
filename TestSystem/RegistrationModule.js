@@ -22,7 +22,7 @@ var init = function () {
             modus: Number,
             coins: Number,
             visisble: Number,
-            pictures: Array,
+            photos: Array,
             benefits: Array
         })
         UserModel = mongoose.model('User', userSchema)
@@ -40,7 +40,7 @@ var register = function (req, res) {
             latitude: req.body.latitude,
             coins: 0,
             visible: 1,
-            picturs: [],
+            photos: [],
             benefits: []
         })
         user.save(function (err) {
@@ -63,7 +63,7 @@ var deleteUser = function (req, res) {
     }, function (err) {
         if (err) {
             console.log(err)
-            res.send('-9')
+            res.send('-120')
             return
         }
         res.send('1')

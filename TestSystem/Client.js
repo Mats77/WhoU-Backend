@@ -104,7 +104,6 @@ var logUserInWIthSessionKey = function (userId, sessionKey) {
         successfullCount++
         printResult()
         logout(userId)
-        deleteUser(userId)
     })
 }
 
@@ -331,18 +330,19 @@ var logout = function (userId) {
         console.log('Everything alright with logout: ' + data)
         successfullCount++
         printResult()
+        deleteUser(userId)
     })
 }
 
 var getGamesToRate = function (userId) {
     testCount++
     var user = {
-        userId: userId
+        _id: userId
     }
     request.get(host + port + gamesToRatePath, {
         form: user
     }, function (err, response, data) {
-        if (err != -1) {
+        if (err || data.length == 2) {
             console.log(err + data)
             console.error('GAMES TO RATE BROKE DOWN')
             failureCount++
@@ -359,7 +359,7 @@ var savePhoto = function (userId, photoString) {
     testCount++
     var photoData = {
         '_id': userId,
-        'photo': photoString,
+        'photoString': photoString,
     }
     request.post(host + port + newPhotoPath, {
         form: photoData
@@ -380,9 +380,10 @@ var savePhoto = function (userId, photoString) {
 var deletePhoto = function (userId, photoId) {
     testCount++
     var deletePhotoRequest = {
-        'UID': userId,
+        '_id': userId,
         'PID': photoId
     }
+    console.log('URL: ' + host + port + deletePhotoPath)
     request.del(host + port + deletePhotoPath, {
         form: deletePhotoRequest
     }, function (err, response, data) {

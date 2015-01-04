@@ -21,7 +21,7 @@ const recentEventsPath = '/userData/recentEvents'
 const changeModusPath = '/userData/changeModus'
 const updateGPSPath = '/userData/updateGPS'
 const newPhotoPath = '/photo/saveNew'
-const deletePhotoPath = 'photo/delete'
+const deletePhotoPath = '/photo/delete'
 const logOutPath = '/logout'
 const deleteUserPath = '/delete'
 

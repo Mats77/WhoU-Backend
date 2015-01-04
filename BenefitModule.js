@@ -23,9 +23,9 @@ var init = function () {
 }
 
 var getAllItems = function (req, res) {
-    var items = benefitModel.find({}, function (err, data) {
+    var items = BenefitModel.find({}, function (err, data) {
         if (err) {
-            res.send('-8')
+            res.send('-100')
             return
         }
         res.send(data)
@@ -33,7 +33,66 @@ var getAllItems = function (req, res) {
 }
 
 var buyItem = function (req, res) {
-    res.send('-9999')
+    UserModel.findOne({
+        _id: req.body._id
+    }, function (err, user) {
+        if (err) {
+            res.send('-100')
+            return
+        } else if (user == null) {
+            res.send('-4')
+            return
+        } else {
+            BenefitModel.findOne({
+                id: req.body.BID
+            }, function (err, item) {
+                if (err) {
+                    res.send('-100')
+                    return
+                } else if (item == null) {
+                    res.send('-7')
+                    return
+                } else {
+                    if (user.coins > (item.price * req.body.count)) {
+                        user.coins = (Number(item.price) * Number(req.body.count))
+                        if (user.benefits.length == 0) {
+                            user.benefits = [
+                                {
+                                    BID: item.id,
+                                    count: req.body.count
+                                }
+                            ]
+                        } else {
+                            user.benefits.push({
+                                BID: item.id,
+                                count: req.body.count
+                            })
+                        }
+                        UserModel.update({
+                            _id: user.id
+                        }, {
+                            $set: {
+                                benefits: user.benefits,
+                                coins: user.coins
+                            }
+                        }, function (err) {
+                            if (err) {
+                                res.send(err)
+                                return
+                            } else {
+                                res.send('1')
+                                return
+                            }
+                        })
+                    } else {
+                        res.send('-9999')
+                    }
+                    return
+                }
+            })
+            return
+        }
+    })
 }
 
 

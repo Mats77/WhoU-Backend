@@ -25,7 +25,7 @@ var init = function () {
 var getAllItems = function (req, res) {
     var items = BenefitModel.find({}, function (err, data) {
         if (err) {
-            res.send('-8')
+            res.send('-100')
             return
         }
         res.send(data)
@@ -47,10 +47,10 @@ var buyItem = function (req, res) {
                 id: req.body.BID
             }, function (err, item) {
                 if (err) {
-                    res.send('-10')
+                    res.send('-100')
                     return
                 } else if (item == null) {
-                    res.send('-11')
+                    res.send('-7')
                     return
                 } else {
                     if (user.coins > (item.price * req.body.count)) {
@@ -85,7 +85,7 @@ var buyItem = function (req, res) {
                             }
                         })
                     } else {
-                        res.send('-13')
+                        res.send('-9999')
                     }
                     return
                 }

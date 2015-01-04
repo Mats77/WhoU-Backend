@@ -38,10 +38,12 @@ var register = function (req, res) {
             username: req.body.username,
             password: req.body.password,
             mail: req.body.mail,
+            longitude: req.body.longitude,
+            latitude: req.body.latitude,
             coins: 0,
             visible: 1,
-            longitude: req.body.longitude,
-            latitude: req.body.latitude
+            photos: [],
+            benefits: []
         })
         user.save(function (err) {
             if (!err) {
@@ -63,7 +65,7 @@ var deleteUser = function (req, res) {
     }, function (err) {
         if (err) {
             console.log(err)
-            res.send('-9')
+            res.send('-120')
             return
         }
         res.send('1')

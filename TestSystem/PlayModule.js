@@ -2,6 +2,7 @@ var mongoose = require('mongoose')
 var db
 var UserModel
 var GameModel
+var allDone
 
 var init = function () {
     mongoose.connect('mongodb://localhost:27017/whoU')
@@ -18,7 +19,8 @@ var init = function () {
             userSearching: String,
             userFound: String,
             ratedByUserSearched: Number,
-            ratedByUserFound: Number
+            ratedByUserFound: Number,
+            timeStamp: Number
         })
         GameModel = mongoose.model('Game', gameSchema)
     })
@@ -41,13 +43,14 @@ var play = function (req, res) {
             var newGame = new GameModel({
                 userSearching: searchRequest._id,
                 userFound: user._id,
-                ratedByUserSearching: 0,
-                ratedByUserFound: 0
+                ratedByUserSearched: 0,
+                ratedByUserFound: 0,
+                timeStamp: Date.now()
             })
             newGame.save(function (err) {
                 if (err) {
                     console.log(err)
-                    res.send(-6)
+                    res.send('-110')
                 }
                 console.log('New game saved')
                 var toReturn = {
@@ -81,7 +84,7 @@ var handleRating = function (req, res) {
             return console.err
         } else if (user == null) {
             console.log('No User found')
-            return res.send('-3') //No User Found
+            return res.send('-4') //No User Found
         } else {
             if (user.coins != null)
                 user.coins += coins
@@ -89,7 +92,7 @@ var handleRating = function (req, res) {
                 user.coins = coins
             user.save(function (err) {
                 if (err) {
-                    res.send('-4')
+                    res.send('-110')
                     return console.log(err)
                 }
                 res.send('1')
@@ -99,46 +102,67 @@ var handleRating = function (req, res) {
 }
 
 var getGamesToRate = function (req, res) {
-    res.send('-9999')
-    //    var _id = req.param('userId')
-    //    GameModel.find({
-    //        $or: [{
-    //            userSearching: _id
-    //                }, {
-    //            userFound: _id
-    //            }]
-    //    }).exec(function (err, data) {
-    //        if (err) {
-    //            res.send(err)
-    //            return console.err
-    //        }
-    //        for (var i = 0; i < data.length; i++) {
-    //            var userIdOfUserPlayedWith
-    //            if (_id == data[i].userSearching) {
-    //                userIdOfUserPlayedWith = data[i].userFound
-    //            } else {
-    //                userIdOfUserPlayedWith = data[i].userSearching
-    //            }
-    //            UserModel.findOne({
-    //                _id: userIdOfUserPlayedWith
-    //            }, function (err, data) {
-    //                if (err) {
-    //                    events.push(err)
-    //                } else if (data == null) {
-    //                    events.push('NO other user found')
-    //                } else {
-    //                    events.push({
-    //                        'type': 'played',
-    //                        'date': '01.01.2014',
-    //                        'user': data.username
-    //                    })
-    //                }
-    //            }).exec(function () {
-    //                if (events.length == data.length)
-    //                    res.send(events)
-    //            })
-    //        }
-    //    })
+    var gamesToRate = []
+    allDone = false
+    console.log('ID:' + req.body._id)
+    GameModel.find({
+        $or: [{
+            userSearching: req.body._id
+        }, {
+            userFound: req.body._id
+        }]
+    }, function (err, games) {
+        console.log('GAMES:' + games)
+        console.log(games.length)
+        if (err) {
+            res.send('-100')
+            return
+        }
+        for (var i = 0; i < games.length; i++) {
+            var userPlayedWith
+            var timeStamp
+            var gameId
+            if (games[i].userFound == req.body._id && games[i].ratedByUserFound == 0) {
+                timeStamp = games[i].timeStamp
+                gameId = games[i]._id
+                UserModel.findOne({
+                    _id: games[i].userSearching
+                }, function (err, user) {
+                    if (err) {
+                        console.log(err)
+                    }
+                    gamesToRate.push({
+                        userPlayedWith: user.username,
+                        date: timeStamp,
+                        gameId: gameId
+                    })
+                    sendGamesToRateResponse(res, gamesToRate)
+                })
+            } else if (games[i].userSearching == req.body._id && games[i].ratedByUserSearched == 0) {
+                timeStamp = games[i].timeStamp
+                gameId = games[i]._id
+                UserModel.findOne({
+                    _id: games[i].userFound
+                }, function (err, user) {
+                    if (err) {
+                        console.log(err)
+                    }
+                    gamesToRate.push({
+                        userPlayedWith: user.username,
+                        date: timeStamp,
+                        gameId: gameId
+                    })
+                    sendGamesToRateResponse(res, gamesToRate)
+                })
+            }
+        }
+        allDone = true
+    })
+}
+
+function sendGamesToRateResponse(res, gamesToRate) {
+    if (allDone)
+        res.send(gamesToRate)
 }
 
 var photoTest = function (req, res) {

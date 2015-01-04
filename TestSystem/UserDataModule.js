@@ -25,7 +25,7 @@ var getUserData = function (req, res) {
             res.send(err)
             return console.err
         } else if (user == null) {
-            res.send('-4: User wurde nicht gefunden ' + _id) //No User found
+            res.send('-4') //No User found
             return
         }
         console.log('User: ' + user)
@@ -35,12 +35,6 @@ var getUserData = function (req, res) {
             fotoId: 0
         }
         res.send(userToReturn)
-    })
-}
-
-var fetchUserName = function () {
-    UserModel.findOne({
-        _id: 12
     })
 }
 
@@ -101,12 +95,12 @@ var changeModus = function (req, res) {
             return console.err
         } else if (user == null) {
             console.log('No User found')
-            return res.send('-3') //No User Found
+            return res.send('-4') //No User Found
         } else {
             user.modus = newModus
             user.save(function (err) {
                 if (err) {
-                    res.send('-4')
+                    res.send('-110')
                     return console.log(err)
                 }
                 res.send('1')
@@ -129,13 +123,13 @@ var updateGPS = function (req, res) {
             return console.err
         } else if (user == null) {
             console.log('No User found')
-            return res.send('-3') //No User Found
+            return res.send('-4') //No User Found
         } else {
             user.longitude = longitude
             user.latitude = latitude
             user.save(function (err) {
                 if (err) {
-                    res.send('-4')
+                    res.send('-110')
                     return console.log(err)
                 }
                 res.send('1')
@@ -145,11 +139,74 @@ var updateGPS = function (req, res) {
 }
 
 var savePhoto = function (req, res) {
-    res.send('-9999')
+    UserModel.findOne({
+            _id: req.body._id
+        },
+        function (err, user) {
+            if (err != null) {
+                res.send('-100')
+                return
+            } else if (user == null) {
+                res.send('-4')
+                return
+            } else {
+                user.photos.push({
+                    id: user.photos.length,
+                    photoString: req.body.photoString
+                })
+                UserModel.update({
+                    _id: user.id
+                }, {
+                    $set: {
+                        photos: user.photos
+                    }
+                }, function (err) {
+                    if (err) {
+                        res.send(err)
+                        return
+                    } else {
+                        res.send('1')
+                        return
+                    }
+                })
+            }
+        })
 }
 
 var deletePhoto = function (req, res) {
-    res.send('-9999')
+    UserModel.findOne({
+        _id: req.body._id
+    }, function (err, user) {
+        if (err) {
+            res.send('-100')
+            return
+        } else if (user == null) {
+            res.send('-4')
+            return
+        } else {
+            for (var i = user.photos.length - 1; i >= 0; i--) {
+                if (photo.id == req.body.photoId) {
+                    user.photos.splice(i, 1)
+                    break
+                }
+            }
+            UserModel.update({
+                _id: user.id
+            }, {
+                $set: {
+                    photos: user.photos
+                }
+            }, function (err) {
+                if (err) {
+                    res.send(err)
+                    return
+                } else {
+                    res.send('1')
+                    return
+                }
+            })
+        }
+    })
 }
 
 exports.init = init
