@@ -22,11 +22,10 @@ var init = function () {
             modus: Number,
             coins: Number,
             visisble: Number,
-            picture: {
-                data: Buffer,
-                contentType: String
-            }
+            photos: Array,
+            benefits: Array
         })
+        UserModel = mongoose.model('User', userSchema)
         UserModel = mongoose.model('User', userSchema)
     })
 }

@@ -2,6 +2,7 @@ var mongoose = require('mongoose')
 var db
 var UserModel
 var GameModel
+var allDone = false
 
 var init = function () {
     mongoose.connect('mongodb://Mats:MobileProject.123@localhost:20766/whoU')
@@ -102,12 +103,14 @@ var handleRating = function (req, res) {
 var getGamesToRate = function (req, res) {
     var gamesToRate = []
     allDone = false
-    console.log('ID:' + req.body._id)
+    var counter = 0
+    var _id = req.param('_id')
+    console.log('ID:' + _id)
     GameModel.find({
         $or: [{
-            userSearching: req.body._id
+            userSearching: _id
         }, {
-            userFound: req.body._id
+            userFound: _id
         }]
     }, function (err, games) {
         console.log('GAMES:' + games)
@@ -115,52 +118,63 @@ var getGamesToRate = function (req, res) {
         if (err) {
             res.send('-100')
             return
-        }
-        for (var i = 0; i < games.length; i++) {
-            var userPlayedWith
-            var timeStamp
-            var gameId
-            if (games[i].userFound == req.body._id && games[i].ratedByUserFound == 0) {
-                timeStamp = games[i].timeStamp
-                gameId = games[i]._id
-                UserModel.findOne({
-                    _id: games[i].userSearching
-                }, function (err, user) {
-                    if (err) {
-                        console.log(err)
-                    }
-                    gamesToRate.push({
-                        userPlayedWith: user.username,
-                        date: timeStamp,
-                        gameId: gameId
+        } else if (games.length == 0) {
+            console.log(_id)
+            res.send('-987654')
+        } else {
+            for (var i = 0; i < games.length; i++) {
+                var userPlayedWith
+                var timeStamp
+                var gameId
+                if (games[i].userFound == _id && games[i].ratedByUserFound == 0) {
+                    timeStamp = games[i].timeStamp
+                    gameId = games[i]._id
+                    UserModel.findOne({
+                        _id: games[i].userSearching
+                    }, function (err, user) {
+                        if (err) {
+                            console.log(err)
+                        }
+                        gamesToRate.push({
+                            userPlayedWith: user.username,
+                            date: timeStamp,
+                            gameId: gameId
+                        })
+                        counter++
+                        if (counter == games.length)
+                            allDone = true
+                        sendGamesToRateResponse(res, gamesToRate)
                     })
-                    sendGamesToRateResponse(res, gamesToRate)
-                })
-            } else if (games[i].userSearching == req.body._id && games[i].ratedByUserSearched == 0) {
-                timeStamp = games[i].timeStamp
-                gameId = games[i]._id
-                UserModel.findOne({
-                    _id: games[i].userFound
-                }, function (err, user) {
-                    if (err) {
-                        console.log(err)
-                    }
-                    gamesToRate.push({
-                        userPlayedWith: user.username,
-                        date: timeStamp,
-                        gameId: gameId
+                } else if (games[i].userSearching == _id && games[i].ratedByUserSearched == 0) {
+                    timeStamp = games[i].timeStamp
+                    gameId = games[i]._id
+                    UserModel.findOne({
+                        _id: games[i].userFound
+                    }, function (err, user) {
+                        if (err) {
+                            console.log(err)
+                        }
+                        gamesToRate.push({
+                            userPlayedWith: user.username,
+                            date: timeStamp,
+                            gameId: gameId
+                        })
+                        counter++
+                        if (counter == games.length)
+                            allDone = true
+                        sendGamesToRateResponse(res, gamesToRate)
                     })
-                    sendGamesToRateResponse(res, gamesToRate)
-                })
+                }
             }
         }
-        allDone = true
     })
 }
 
 function sendGamesToRateResponse(res, gamesToRate) {
-    if (allDone)
+    if (allDone) {
         res.send(gamesToRate)
+        allDone = false
+    }
 }
 
 var photoTest = function (req, res) {

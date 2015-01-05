@@ -181,7 +181,7 @@ var searchPartnerToPlayWith = function (userId) {
 var getUserData = function (userId) {
     testCount++
     var user = {
-        'UID': userId
+        '_id': userId
     }
     request.get(host + port + userDataPath, {
         form: user
@@ -202,7 +202,7 @@ var getUserData = function (userId) {
 var getRecentEvents = function (userId) {
     testCount++
     var user = {
-        'UID': userId
+        '_id': userId
     }
     request.get(host + port + recentEventsPath, {
         form: user
@@ -247,7 +247,7 @@ var insertNewRating = function (userId, coins) {
 var changeModus = function (userId, newModus) {
     testCount++
     var changeModusRequest = {
-        'UID': userId,
+        '_id': userId,
         'newModus': newModus
     }
     request.put(host + port + changeModusPath, {
@@ -269,7 +269,7 @@ var changeModus = function (userId, newModus) {
 var updateGPS = function (userId, longitude, latitude) {
     testCount++
     var userLocationData = {
-        'UID': userId,
+        '_id': userId,
         'longitude': longitude,
         'latitude': latitude
     }

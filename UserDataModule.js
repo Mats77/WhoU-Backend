@@ -17,7 +17,7 @@ var init = function () {
 }
 
 var getUserData = function (req, res) {
-    var _id = req.param('UID')
+    var _id = req.param._id
     UserModel.findOne({
         _id: _id
     }, function (err, user) {
@@ -40,7 +40,8 @@ var getUserData = function (req, res) {
 
 
 var getRecentEvents = function (req, res) {
-    var _id = req.param('UID')
+    var _id = req.param('_id')
+    console.log('recent events id: ' + _id)
     var events = []
     GameModel.find({
         $or: [{
@@ -49,10 +50,16 @@ var getRecentEvents = function (req, res) {
             userFound: _id
             }]
     }).exec(function (err, data) {
+        console.log('1')
         if (err) {
             res.send(err)
-            return console.err
+            console.log(err)
+            return
+        } else if (data.length == 0) {
+            res.send('-1235478')
+            return
         }
+        console.log('recent events data ' + data)
         for (var i = 0; i < data.length; i++) {
             var userIdOfUserPlayedWith
             if (_id == data[i].userSearching) {
@@ -62,19 +69,19 @@ var getRecentEvents = function (req, res) {
             }
             UserModel.findOne({
                 _id: userIdOfUserPlayedWith
-            }, function (err, data) {
+            }, function (err, user) {
                 if (err) {
                     events.push(err)
-                } else if (data == null) {
+                } else if (user == null) {
                     events.push('NO other user found')
                 } else {
                     events.push({
                         'type': 'played',
                         'date': '01.01.2014',
-                        'user': data.username
+                        'user': user.username
                     })
                 }
-            }).exec(function () {
+                console.log('data length: ' + data.length + ' events length: ' + events.length)
                 if (events.length == data.length)
                     res.send(events)
             })
@@ -83,7 +90,7 @@ var getRecentEvents = function (req, res) {
 }
 
 var changeModus = function (req, res) {
-    var _id = req.body.UID
+    var _id = req.body._id
     var newModus = req.body.nowModus
 
     UserModel.findOne({
@@ -92,16 +99,19 @@ var changeModus = function (req, res) {
         if (err) {
             console.err
             res.send('-100') //Error with database Connection
-            return console.err
+            console.err
+            return
         } else if (user == null) {
             console.log('No User found')
-            return res.send('-4') //No User Found
+            res.send('-4')
+            return //No User Found
         } else {
             user.modus = newModus
             user.save(function (err) {
                 if (err) {
                     res.send('-110')
-                    return console.log(err)
+                    console.log(err)
+                    return
                 }
                 res.send('1')
             })
@@ -110,7 +120,7 @@ var changeModus = function (req, res) {
 }
 
 var updateGPS = function (req, res) {
-    var _id = req.body.UID
+    var _id = req.body._id
     var longitude = req.body.longitude
     var latitude = req.body.latitude
 
@@ -120,17 +130,20 @@ var updateGPS = function (req, res) {
         if (err) {
             console.err
             res.send('-100') //Error with database Connection
-            return console.err
+            console.err
+            return
         } else if (user == null) {
             console.log('No User found')
-            return res.send('-4') //No User Found
+            res.send('-4') //No User Found
+            return
         } else {
             user.longitude = longitude
             user.latitude = latitude
             user.save(function (err) {
                 if (err) {
                     res.send('-110')
-                    return console.log(err)
+                    console.log(err)
+                    return
                 }
                 res.send('1')
             })
@@ -139,6 +152,9 @@ var updateGPS = function (req, res) {
 }
 
 var savePhoto = function (req, res) {
+    console.log('ID 1:' + req.body._id)
+    console.log('ID2: ' + req.param('_id'))
+    console.log(req.body._id)
     UserModel.findOne({
             _id: req.body._id
         },

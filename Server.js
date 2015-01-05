@@ -71,8 +71,8 @@ app.get(recentEventsPath, cors(), function (req, res, next) {
     userDataModule.getRecentEvents(req, res)
 })
 
-app.put(newPhotoPath, cors(), function (req, res, next) {
-    res.send('-9999')
+app.post(newPhotoPath, cors(), function (req, res, next) {
+    userDataModule.savePhoto(req, res)
 })
 
 app.delete(deletePhotoPath, cors(), function (req, res, next) {
