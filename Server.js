@@ -21,6 +21,7 @@ const recentEventsPath = '/userData/recentEvents'
 const changeModusPath = '/userData/changeModus'
 const updateGPSPath = '/userData/updateGPS'
 const newPhotoPath = '/photo/saveNew'
+const getPhotoPath = '/photo/get'
 const deletePhotoPath = '/photo/delete'
 const logOutPath = '/logout'
 const deleteUserPath = '/delete'
@@ -76,7 +77,11 @@ app.post(newPhotoPath, cors(), function (req, res, next) {
 })
 
 app.delete(deletePhotoPath, cors(), function (req, res, next) {
-    res.send('-9999')
+    userDataModule.deletePhoto(req, res)
+})
+
+app.get(getPhotoPath, cors(), function (req, res, next) {
+    userDataModule.getPhoto(req, res)
 })
 
 app.put(logOutPath, cors(), function (req, res, next) {

@@ -21,7 +21,7 @@ var init = function () {
             latitude: Number,
             modus: Number,
             coins: Number,
-            visisble: Number,
+            visible: Number,
             photos: Array,
             benefits: Array
         })

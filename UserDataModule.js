@@ -17,7 +17,8 @@ var init = function () {
 }
 
 var getUserData = function (req, res) {
-    var _id = req.param._id
+    var _id = req.param('_id')
+    console.log('GetUserData: ' + _id)
     UserModel.findOne({
         _id: _id
     }, function (err, user) {
@@ -225,9 +226,33 @@ var deletePhoto = function (req, res) {
     })
 }
 
+var getPhoto = function (req, res) {
+    var _id = req.param('_id')
+    var photoId = req.param('photoId')
+    UserModel.findOne({
+        _id: _id
+    }, function (err, user) {
+        if (err) {
+            console.log(err)
+            res.send('-100')
+            return
+        } else if (user == null) {
+            res.send('-4')
+            return
+        } else {
+            if (user.photos.length > photoId) {
+                res.send(user.photos[photoId])
+            } else {
+                res.send('-8')
+            }
+        }
+    })
+}
+
 exports.init = init
 exports.getUserData = getUserData
 exports.getRecentEvents = getRecentEvents
+exports.getPhoto = getPhoto
 exports.changeModus = changeModus
 exports.updateGPS = updateGPS
 exports.savePhoto = savePhoto

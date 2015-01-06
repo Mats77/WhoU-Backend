@@ -1,7 +1,7 @@
 var mongoose = require('mongoose')
 var db
-var benefitModel
-var userModel
+var BenefitModel
+var UserModel
 
 var init = function () {
     mongoose.connect('mongodb://Mats:MobileProject.123@localhost:20766/whoU')
@@ -17,8 +17,8 @@ var init = function () {
             description: String,
             price: Number
         })
-        userModel = require('mongoose').model('User')
-        benefitModel = mongoose.model('Benefit', benefitSchema)
+        UserModel = require('mongoose').model('User')
+        BenefitModel = mongoose.model('Benefit', benefitSchema)
     })
 }
 
@@ -53,8 +53,12 @@ var buyItem = function (req, res) {
                     res.send('-7')
                     return
                 } else {
-                    if (user.coins > (item.price * req.body.count)) {
-                        user.coins = (Number(item.price) * Number(req.body.count))
+                    if (user.coins >= (item.price * req.body.count)) {
+                        console.log('BUY price: ' + Number(item.price))
+                        console.log('BUY count: ' + req.body.count)
+                        console.log('BUY old coins: ' + user.coins)
+                        console.log('BUY new coins: ' + user.coins - (Number(item.price) * Number(req.body.count)))
+                        user.coins = (user.coins - (Number(item.price) * Number(req.body.count)))
                         if (user.benefits.length == 0) {
                             user.benefits = [
                                 {
@@ -63,10 +67,19 @@ var buyItem = function (req, res) {
                                 }
                             ]
                         } else {
-                            user.benefits.push({
-                                BID: item.id,
-                                count: req.body.count
-                            })
+                            var itemAlreadyExistsAtLeastOnce = false
+                            for (var i = 0; i < user.benefits.length; i++) {
+                                if (user.benefits[i].BID == item.id) {
+                                    user.benefits[i].count = user.benefits[i].count + req.body.count
+                                    itemAlreadyExistsAtLeastOnce = true
+                                }
+                            }
+                            if (!itemAlreadyExistsAtLeastOnce) {
+                                user.benefits.push({
+                                    BID: item.id,
+                                    count: req.body.count
+                                })
+                            }
                         }
                         UserModel.update({
                             _id: user.id
@@ -85,7 +98,7 @@ var buyItem = function (req, res) {
                             }
                         })
                     } else {
-                        res.send('-9999')
+                        res.send('-9')
                     }
                     return
                 }
