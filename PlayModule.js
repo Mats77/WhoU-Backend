@@ -2,7 +2,7 @@ var mongoose = require('mongoose')
 var db
 var UserModel
 var GameModel
-var allDone = false
+    //var allDone = false
 
 var init = function () {
     mongoose.connect('mongodb://Mats:MobileProject.123@localhost:20766/whoU')
@@ -54,8 +54,8 @@ var play = function (req, res) {
                 console.log('New game saved')
                 var toReturn = {
                     'username': user.username,
-                    'longitude': 1231.112,
-                    'latitude': 12311.22,
+                    'longitude': user.longitude,
+                    'latitude': user.latitude,
                     'task': 'Finde heruas:;Eat a Döner;Find out Name', //first for task, following for list-items
                     'taskType': 1, //0 for text, 1 for list
                     'image': {
@@ -72,6 +72,7 @@ var play = function (req, res) {
 var handleRating = function (req, res) {
     var _id = req.body._id
     var coins = req.body.coins
+    var gameId = req.body.gameId
     console.log(req.body)
 
     UserModel.findOne({
@@ -95,6 +96,49 @@ var handleRating = function (req, res) {
                     return console.log(err)
                 }
                 res.send('1')
+                GameModel.findOne({
+                    _id: gameId
+                }, function (err, game) {
+                    if (err) {
+                        console.log(err)
+                        return
+                    }
+                    if (game == null) {
+                        console.log('INSERT RATING: No game found')
+                        return
+                    }
+                    console.log('HandleRating Game-UserId: ' + game.userFound)
+                    console.log('HandeRating UserId: ' + _id)
+                    if (game.userFound == _id) {
+                        GameModel.update({
+                            _id: gameId
+                        }, {
+                            $set: {
+                                ratedByUserSearched: 1
+                            }
+                        }, function (err) {
+                            if (err) {
+                                console.log(err)
+                                return
+                            }
+                            console.log('HandleRating: Update UserSearched done')
+                        })
+                    } else {
+                        GameModel.update({
+                            _id: gameId
+                        }, {
+                            $set: {
+                                ratedByUserFound: 1
+                            }
+                        }, function (err) {
+                            if (err) {
+                                console.log(err)
+                                return
+                            }
+                            console.log('HandleRating: Update UserFound done')
+                        })
+                    }
+                })
             })
         }
     })
@@ -102,10 +146,9 @@ var handleRating = function (req, res) {
 
 var getGamesToRate = function (req, res) {
     var gamesToRate = []
-    allDone = false
-    var counter = 0
+        //    allDone = false
+        //    var counter = 0
     var _id = req.param('_id')
-    console.log('ID:' + _id)
     GameModel.find({
         $or: [{
             userSearching: _id
@@ -113,69 +156,49 @@ var getGamesToRate = function (req, res) {
             userFound: _id
         }]
     }, function (err, games) {
-        console.log('GAMES:' + games)
-        console.log(games.length)
         if (err) {
             res.send('-100')
             return
         } else if (games.length == 0) {
             console.log(_id)
-            res.send('-987654')
+            res.send('-10')
+            return
         } else {
+            var gameIdsFound = []
+            var gameIdsSearched = []
             for (var i = 0; i < games.length; i++) {
-                var userPlayedWith
-                var timeStamp
-                var gameId
                 if (games[i].userFound == _id && games[i].ratedByUserFound == 0) {
-                    timeStamp = games[i].timeStamp
-                    gameId = games[i]._id
-                    UserModel.findOne({
-                        _id: games[i].userSearching
-                    }, function (err, user) {
-                        if (err) {
-                            console.log(err)
-                        }
-                        gamesToRate.push({
-                            userPlayedWith: user.username,
-                            date: timeStamp,
-                            gameId: gameId
-                        })
-                        counter++
-                        if (counter == games.length)
-                            allDone = true
-                        sendGamesToRateResponse(res, gamesToRate)
+                    gamesToRate.push({
+                        gameId: games[i]._id,
+                        otherPlayerId: games[i].userSearching
                     })
+
                 } else if (games[i].userSearching == _id && games[i].ratedByUserSearched == 0) {
-                    timeStamp = games[i].timeStamp
-                    gameId = games[i]._id
-                    UserModel.findOne({
-                        _id: games[i].userFound
-                    }, function (err, user) {
-                        if (err) {
-                            console.log(err)
-                        }
-                        gamesToRate.push({
-                            userPlayedWith: user.username,
-                            date: timeStamp,
-                            gameId: gameId
-                        })
-                        counter++
-                        if (counter == games.length)
-                            allDone = true
-                        sendGamesToRateResponse(res, gamesToRate)
+                    gamesToRate.push({
+                        gameId: games[i]._id,
+                        otherPlayerId: games[i].userFound
                     })
                 }
             }
+            if (gamesToRate.length == 0) {
+                res.send('-10')
+                return
+            }
+            res.send(gamesToRate)
         }
     })
 }
 
-function sendGamesToRateResponse(res, gamesToRate) {
-    if (allDone) {
-        res.send(gamesToRate)
-        allDone = false
-    }
-}
+//function sendGamesToRateResponse(res, gamesToRate) {
+//    if (allDone) {
+//        if (gamesToRate.length == 0) {
+//            res.send('-10')
+//        } else {
+//            res.send(gamesToRate)
+//        }
+//        allDone = false
+//    }
+//}
 
 var photoTest = function (req, res) {
     res.type('text/plain')

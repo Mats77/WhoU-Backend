@@ -24,16 +24,20 @@ var getUserData = function (req, res) {
     }, function (err, user) {
         if (err) {
             res.send(err)
-            return console.err
+            console.err
+            return
         } else if (user == null) {
             res.send('-4') //No User found
             return
         }
-        console.log('User: ' + user)
+        var photoIds = []
+        for (var i = 0; i < user.photos.length; i++) {
+            photoIds.push(user.photos[i].id)
+        }
         var userToReturn = {
             userName: user.username,
             coins: user.coins,
-            fotoId: 0
+            photoIds: photoIds
         }
         res.send(userToReturn)
     })
@@ -42,7 +46,6 @@ var getUserData = function (req, res) {
 
 var getRecentEvents = function (req, res) {
     var _id = req.param('_id')
-    console.log('recent events id: ' + _id)
     var events = []
     GameModel.find({
         $or: [{
@@ -60,7 +63,6 @@ var getRecentEvents = function (req, res) {
             res.send('-1235478')
             return
         }
-        console.log('recent events data ' + data)
         for (var i = 0; i < data.length; i++) {
             var userIdOfUserPlayedWith
             if (_id == data[i].userSearching) {
@@ -73,13 +75,17 @@ var getRecentEvents = function (req, res) {
             }, function (err, user) {
                 if (err) {
                     events.push(err)
-                } else if (user == null) {
-                    events.push('NO other user found')
-                } else {
+                } else if (user != null) {
                     events.push({
                         'type': 'played',
                         'date': '01.01.2014',
                         'user': user.username
+                    })
+                } else {
+                    events.push({
+                        'type': 'played',
+                        'date': '01.01.2014',
+                        'user': 'user deleted'
                     })
                 }
                 console.log('data length: ' + data.length + ' events length: ' + events.length)
@@ -92,30 +98,20 @@ var getRecentEvents = function (req, res) {
 
 var changeModus = function (req, res) {
     var _id = req.body._id
-    var newModus = req.body.nowModus
+    var newModus = req.body.newModus
 
-    UserModel.findOne({
+    UserModel.update({
         _id: _id
-    }, function (err, user) {
+    }, {
+        $set: {
+            visible: newModus
+        }
+    }, function (err) {
         if (err) {
-            console.err
-            res.send('-100') //Error with database Connection
-            console.err
-            return
-        } else if (user == null) {
-            console.log('No User found')
-            res.send('-4')
-            return //No User Found
+            console.log(err)
+            res.send('-1234')
         } else {
-            user.modus = newModus
-            user.save(function (err) {
-                if (err) {
-                    res.send('-110')
-                    console.log(err)
-                    return
-                }
-                res.send('1')
-            })
+            res.send('1')
         }
     })
 }
@@ -153,9 +149,6 @@ var updateGPS = function (req, res) {
 }
 
 var savePhoto = function (req, res) {
-    console.log('ID 1:' + req.body._id)
-    console.log('ID2: ' + req.param('_id'))
-    console.log(req.body._id)
     UserModel.findOne({
             _id: req.body._id
         },
@@ -240,11 +233,16 @@ var getPhoto = function (req, res) {
             res.send('-4')
             return
         } else {
-            if (user.photos.length > photoId) {
-                res.send(user.photos[photoId])
-            } else {
-                res.send('-8')
+            var somethingSent = false
+            for (var i = 0; i < user.photos.length; i++) {
+                if (user.photos[i].id == photoId) {
+                    res.send(user.photos[i].photoString)
+                    somethingSent = true
+                    break
+                }
             }
+            if (!somethingSent)
+                res.send('-8')
         }
     })
 }
