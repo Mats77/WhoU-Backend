@@ -2,6 +2,7 @@ var mongoose = require('mongoose')
 var db
 var BenefitModel
 var UserModel
+var ContactModel
 
 var init = function () {
     mongoose.connect('mongodb://Mats:MobileProject.123@localhost:20766/whoU')
@@ -19,6 +20,7 @@ var init = function () {
         })
         UserModel = require('mongoose').model('User')
         BenefitModel = mongoose.model('Benefit', benefitSchema)
+        ContactModel = require('mongoose').model('Contact')
     })
 }
 
@@ -54,31 +56,41 @@ var buyItem = function (req, res) {
                     return
                 } else {
                     if (user.coins >= (item.price * req.body.count)) {
-                        console.log('BUY price: ' + Number(item.price))
-                        console.log('BUY count: ' + req.body.count)
-                        console.log('BUY old coins: ' + user.coins)
-                        console.log('BUY new coins: ' + user.coins - (Number(item.price) * Number(req.body.count)))
                         user.coins = (user.coins - (Number(item.price) * Number(req.body.count)))
-                        if (user.benefits.length == 0) {
-                            user.benefits = [
-                                {
-                                    BID: item.id,
-                                    count: req.body.count
-                                }
-                            ]
-                        } else {
-                            var itemAlreadyExistsAtLeastOnce = false
-                            for (var i = 0; i < user.benefits.length; i++) {
-                                if (user.benefits[i].BID == item.id) {
-                                    user.benefits[i].count = user.benefits[i].count + req.body.count
-                                    itemAlreadyExistsAtLeastOnce = true
+                        if (item.id == 4) {
+                            if (user.coinFactor == 1) {
+                                user.benefits.push({
+                                    BID: 4,
+                                    count: 10
+                                })
+                            } else {
+                                for (var benefit in user.benefits) {
+                                    if (benefit.id == 4)
+                                        benefit.count = benefit.count + 10
                                 }
                             }
-                            if (!itemAlreadyExistsAtLeastOnce) {
-                                user.benefits.push({
-                                    BID: item.id,
-                                    count: req.body.count
-                                })
+                        } else {
+                            if (user.benefits.length == 0) {
+                                user.benefits = [
+                                    {
+                                        BID: item.id,
+                                        count: req.body.count
+                                    }
+                                ]
+                            } else {
+                                var itemAlreadyExistsAtLeastOnce = false
+                                for (var i = 0; i < user.benefits.length; i++) {
+                                    if (user.benefits[i].BID == item.id) {
+                                        user.benefits[i].count = user.benefits[i].count + req.body.count
+                                        itemAlreadyExistsAtLeastOnce = true
+                                    }
+                                }
+                                if (!itemAlreadyExistsAtLeastOnce) {
+                                    user.benefits.push({
+                                        BID: item.id,
+                                        count: req.body.count
+                                    })
+                                }
                             }
                         }
                         UserModel.update({
@@ -108,7 +120,35 @@ var buyItem = function (req, res) {
     })
 }
 
+var upgradeMessageCount = function (req, res) {
+    var _id = req.body._id
+    var otherUserId = req.body.otherUser
+    ContactModel.update({
+            $or: [{
+                firstUserId: _id,
+                secondUserId: otherUserId
+        }, {
+                firstUserId: otherUserId,
+                secondUserId: _id
+        }]
+        }, {
+            $inc: {
+                messagesLeftFirstUser: 30,
+                messagesLeftSecondUser: 30
+            }
+        },
+        function (err) {
+            if (err) {
+                console.log(err)
+                res.send('-100')
+                return
+            }
+            res.send('1')
+        })
+}
+
 
 exports.init = init
 exports.getAllItems = getAllItems
 exports.buyItem = buyItem
+exports.upgradeMessageCount = upgradeMessageCount

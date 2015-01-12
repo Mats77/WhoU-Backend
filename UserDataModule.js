@@ -31,13 +31,19 @@ var getUserData = function (req, res) {
             return
         }
         var photoIds = []
+        var profilePhotoId = -1
         for (var i = 0; i < user.photos.length; i++) {
             photoIds.push(user.photos[i].id)
+            if (user.photos[i].isProfilPhoto == 1) {
+                profilePhotoId = user.photos[i].id
+            }
         }
         var userToReturn = {
+            id: _id,
             userName: user.username,
             coins: user.coins,
-            photoIds: photoIds
+            photoIds: photoIds,
+            profilePhotoId: profilePhotoId
         }
         res.send(userToReturn)
     })
@@ -78,13 +84,13 @@ var getRecentEvents = function (req, res) {
                 } else if (user != null) {
                     events.push({
                         'type': 'played',
-                        'date': '01.01.2014',
+                        'date': data.timeStamp,
                         'user': user.username
                     })
                 } else {
                     events.push({
                         'type': 'played',
-                        'date': '01.01.2014',
+                        'date': data.timeStamp,
                         'user': 'user deleted'
                     })
                 }
@@ -160,9 +166,11 @@ var savePhoto = function (req, res) {
                 res.send('-4')
                 return
             } else {
+                var isProfilPhoto = user.photos.length == 0 ? 1 : 0
                 user.photos.push({
                     id: user.photos.length,
-                    photoString: req.body.photoString
+                    photoString: req.body.photoString,
+                    isProfilPhoto: isProfilPhoto
                 })
                 UserModel.update({
                     _id: user.id
@@ -236,7 +244,11 @@ var getPhoto = function (req, res) {
             var somethingSent = false
             for (var i = 0; i < user.photos.length; i++) {
                 if (user.photos[i].id == photoId) {
-                    res.send(user.photos[i].photoString)
+                    res.send({
+                        'userId': _id,
+                        'id': user.photos[i].id,
+                        'data': user.photos[i].photoString
+                    })
                     somethingSent = true
                     break
                 }
@@ -244,6 +256,59 @@ var getPhoto = function (req, res) {
             if (!somethingSent)
                 res.send('-8')
         }
+    })
+}
+
+var updateProfilPhoto = function (req, res) {
+    UserModel.findOne({
+        _id: req.body._id
+    }, function (err, user) {
+        if (err) {
+            console.log(err)
+            res.send('-100')
+            return
+        } else if (user == 0) {
+            res.send('-4')
+            return
+        } else {
+            for (var photo in user.photos) {
+                if (photo.id == req.body.photoId) {
+                    photo.isProfilPhoto = 1
+                } else {
+                    photo.isProfilPhoto = 0
+                }
+            }
+            UserModel.update({
+                _id: req.body._id
+            }, {
+                $set: {
+                    photos: user.photos
+                }
+            }, function (err) {
+                if (err) {
+                    res.send('-110')
+                } else {
+                    res.send('1')
+                }
+            })
+        }
+    })
+}
+
+var insertPush = function (req, res) {
+    UserModel.update({
+        _id: req.body._id
+    }, {
+        $set: {
+            pushId: req.body.pushId
+        }
+    }, function (err) {
+        if (err) {
+            console.log(err)
+            res.send('-110')
+            return
+        }
+        res.send('1')
     })
 }
 
@@ -255,3 +320,5 @@ exports.changeModus = changeModus
 exports.updateGPS = updateGPS
 exports.savePhoto = savePhoto
 exports.deletePhoto = deletePhoto
+exports.updateProfilPhoto = updateProfilPhoto
+exports.insertPush = insertPush

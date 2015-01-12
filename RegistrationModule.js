@@ -13,6 +13,7 @@ var init = function () {
     db.once('open', function () {
         console.log('open')
         var userSchema = mongoose.Schema({
+            pushId: String,
             username: String,
             password: String,
             mail: String,
@@ -22,10 +23,11 @@ var init = function () {
             modus: Number,
             coins: Number,
             visible: Number,
+            coinFactor: Number,
             photos: Array,
-            benefits: Array
+            benefits: Array,
+            usersToTalkWith: Array
         })
-        UserModel = mongoose.model('User', userSchema)
         UserModel = mongoose.model('User', userSchema)
     })
 }
@@ -34,15 +36,18 @@ var register = function (req, res) {
     res.type('text/plain')
     if (req.body['username'] != null && req.body['password'] != null && req.body['mail'] != null) {
         var user = new UserModel({
+            pushId: '',
             username: req.body.username,
             password: req.body.password,
             mail: req.body.mail,
             longitude: req.body.longitude,
             latitude: req.body.latitude,
+            coinFactor: 1,
             coins: 0,
             visible: 1,
             photos: [],
-            benefits: []
+            benefits: [],
+            usersToTalkWith: []
         })
         user.save(function (err) {
             if (!err) {

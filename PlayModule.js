@@ -2,6 +2,7 @@ var mongoose = require('mongoose')
 var db
 var UserModel
 var GameModel
+var ContactModel
     //var allDone = false
 
 var init = function () {
@@ -19,9 +20,21 @@ var init = function () {
             userSearching: String,
             userFound: String,
             ratedByUserSearched: Number,
-            ratedByUserFound: Number
+            ratedByUserFound: Number,
+            timeStamp: Number
         })
         GameModel = mongoose.model('Game', gameSchema)
+
+        var contactSchema = mongoose.Schema({
+            firstUserId: String,
+            secondUserId: String,
+            verifiedByFirstUser: Number,
+            verifiedBySecondUser: Number,
+            messagesLeftFirstUser: Number,
+            messagesLeftSecondUser: Number,
+            messages: Array
+        })
+        ContactModel = mongoose.model('Contact', contactSchema)
     })
 }
 
@@ -73,6 +86,7 @@ var handleRating = function (req, res) {
     var _id = req.body._id
     var coins = req.body.coins
     var gameId = req.body.gameId
+    var stayInContact = req.body.stayInContact
     console.log(req.body)
 
     UserModel.findOne({
@@ -87,24 +101,32 @@ var handleRating = function (req, res) {
             return res.send('-4') //No User Found
         } else {
             if (user.coins != null)
-                user.coins += coins
+                user.coins += (coins * user.coinFactor)
             else
-                user.coins = coins
+                user.coins = (coins * user.coinFactor)
+            if (user.coinFactor != 1) {
+                for (var benefit in user.benefits) {
+                    if (benefit.id == 4) {
+                        benefit.counter = benefit.counter - 1
+                    }
+                }
+            }
             user.save(function (err) {
                 if (err) {
                     res.send('-110')
                     return console.log(err)
                 }
-                res.send('1')
                 GameModel.findOne({
                     _id: gameId
                 }, function (err, game) {
                     if (err) {
                         console.log(err)
+                        res.send('-110')
                         return
                     }
                     if (game == null) {
                         console.log('INSERT RATING: No game found')
+                        res.send('-10')
                         return
                     }
                     console.log('HandleRating Game-UserId: ' + game.userFound)
@@ -119,9 +141,11 @@ var handleRating = function (req, res) {
                         }, function (err) {
                             if (err) {
                                 console.log(err)
+                                res.send('-110')
                                 return
                             }
                             console.log('HandleRating: Update UserSearched done')
+                            handleContactRequest(game.userFound, game.userSearching, stayInContact, res)
                         })
                     } else {
                         GameModel.update({
@@ -133,13 +157,81 @@ var handleRating = function (req, res) {
                         }, function (err) {
                             if (err) {
                                 console.log(err)
+                                res.send('-110')
                                 return
                             }
                             console.log('HandleRating: Update UserFound done')
+                            handleContactRequest(game.userFound, game.userSearching, stayInContact, res)
                         })
                     }
                 })
             })
+        }
+    })
+}
+
+function handleContactRequest(userId, otherUserId, wishesToStayInContact, res) {
+    console.log('HANDLE CONTACT REQUEST called')
+    ContactModel.findOne({
+        $or: [
+            {
+                firstUserId: userId,
+                secondUserId: otherUserId
+            }, {
+                firstUserId: otherUserId,
+                secondUserId: userId
+            }
+        ]
+    }, function (err, contact) {
+        if (err) {
+            console.log(err)
+            res.send('-100')
+            return
+        } else if (contact == null) {
+            var newContact = new ContactModel({
+                firstUserId: userId,
+                secondUserId: otherUserId,
+                verifiedByFirstUser: wishesToStayInContact,
+                verifiedBySecondUser: 0,
+                messagesLeftFirstUser: 30,
+                messagesLeftSecondUser: 30,
+                messages: []
+            }).save(function (err) {
+                if (err) {
+                    console.log(err)
+                    res.send('-110')
+                    return
+                }
+                res.send('1')
+                return
+            })
+        } else {
+            if ((contact.verifiedByFirstUser == 1 || contact.verifiedBySecondUser == 1) && wishesToStayInContact) {
+                ContactModel.update({
+                    _id: contact._id
+                }, {
+                    $set: {
+                        verifiedByFirstUser: 1,
+                        verifiedBySecondUser: 1
+                    }
+                }, function (err) {
+                    if (err) {
+                        console.log(err)
+                        res.sen('-110')
+                        return
+                    }
+                    res.send('1')
+                })
+            } else {
+                ContactModel.remove({
+                    _id: contact._id
+                }, function (err) {
+                    console.log(err)
+                    res.send('-120')
+                    return
+                })
+                res.send('1')
+            }
         }
     })
 }

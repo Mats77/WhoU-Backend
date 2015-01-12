@@ -20,24 +20,36 @@ const userDataPath = '/userData/data'
 const recentEventsPath = '/userData/recentEvents'
 const changeModusPath = '/userData/changeModus'
 const updateGPSPath = '/userData/updateGPS'
+const insertPushIdPath = '/userData/pushId'
 const newPhotoPath = '/photo/saveNew'
 const getPhotoPath = '/photo/get'
 const deletePhotoPath = '/photo/delete'
+const updateProfilPhotoPath = '/photo/profilPhoto'
 const logOutPath = '/logout'
 const deleteUserPath = '/delete'
+const usersCurrentlyPlayedWithPath = '/chat/list'
+const previousMessagesPath = '/chat/previousMessages'
+const messagesLeftPath = '/chat/messagesLeftPath'
+const upgradeMessagesPath = '/chat/upgradeMessages'
+const sendMessagePath = '/chat/sendMessage'
+const searchStartedPushPath = '/chat/searchStartedPush'
+const sendStandardMessagePath = '/chat/sendStandardMessage'
 
 //Implement each module
 const playModule = require('./PlayModule')
+const chatModule = require('./ChatModule')
 const registrationModule = require('./RegistrationModule')
 const loginModule = require('./LoginModule')
 const userDataModule = require('./UserDataModule')
 const benefitModule = require('./BenefitModule')
+const initModule = require('./InitModule')
 
 registrationModule.init() //First!!!
 playModule.init() //second!!
 loginModule.init()
 userDataModule.init()
 benefitModule.init()
+chatModule.init()
 
 var app = express()
 
@@ -84,6 +96,10 @@ app.get(getPhotoPath, cors(), function (req, res, next) {
     userDataModule.getPhoto(req, res)
 })
 
+app.put(updateProfilPhotoPath, cors(), function (req, res, next) {
+    userDataModule.updateProfilPhoto(req, res)
+})
+
 app.put(logOutPath, cors(), function (req, res, next) {
     loginModule.logout(req, res)
 })
@@ -94,6 +110,10 @@ app.put(changeModusPath, cors(), function (req, res, next) {
 
 app.put(updateGPSPath, cors(), function (req, res, next) {
     userDataModule.updateGPS(req, res)
+})
+
+app.put(insertPushIdPath, cors(), function (req, res, next) {
+    userDataModule.insertPushId(req, res)
 })
 
 app.get(gamesToRatePath, cors(), function (req, res, next) {
@@ -116,8 +136,37 @@ app.delete(deleteUserPath, cors(), function (req, res, next) {
     registrationModule.deleteUser(req, res)
 })
 
+app.get(usersCurrentlyPlayedWithPath, cors(), function (req, res, next) {
+    chatModule.getUsersCurrentlyPlayedWith(req, res)
+})
+
+app.get(previousMessagesPath, cors(), function (req, res, next) {
+    chatModule.getPreviousMessages(req, res)
+})
+
+app.get(messagesLeftPath, cors(), function (req, res, next) {
+    chatModule.getMessagesLeft(req, res)
+})
+
+app.put(upgradeMessagesPath, cors(), function (req, res, next) {
+    benefitModule.upgradeMessageCount(req, res)
+})
+
+app.post(sendMessagePath, cors(), function (req, res, next) {
+    chatModule.sendMessage(req, res)
+})
+
+app.post(searchStartedPushPath, cors(), function (req, res, next) {
+    chatModule.pushSearchStarted(req, res)
+})
+
+app.post(sendStandardMessagePath, cors(), function (req, res, next) {
+    chatModule.sendStandardMessage(req, res)
+})
+
 app.get('/test', function (req, res, next) {
     playModule.photoTest(req, res)
 })
+
 
 app.listen(port)
