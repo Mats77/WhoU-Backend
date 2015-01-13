@@ -38,49 +38,103 @@ var init = function () {
     })
 }
 
+
 var play = function (req, res) {
-    var searchRequest = req.body
-    res.type('text/plain')
+    var _id = req.body._id
+    var ineligibleUsers = []
+    ineligibleUsers.push(_id)
     UserModel.findOne({
-        _id: {
-            '$ne': searchRequest._id
-        }
+        _id: _id
     }, function (err, user) {
         if (err) {
             console.log(err)
-            res.send('-100') //Database connection error
+            res.send('-100a')
+            return
         } else if (user == null) {
-            res.send('-5') //No User Found
-        } else {
-            var newGame = new GameModel({
-                userSearching: searchRequest._id,
-                userFound: user._id,
-                ratedByUserSearched: 0,
-                ratedByUserFound: 0,
-                timeStamp: Date.now()
-            })
-            newGame.save(function (err) {
+            res.send('-4b')
+            return
+        }
+
+        GameModel.find({
+            $or: [{
+                userSearching: _id
+        }, {
+                userFound: _id
+        }]
+        }, function (err, games) {
+            if (err) {
+                console.log(err)
+                res.send('-100c')
+                return
+            }
+            console.log('NEW PLAY ALGORITHM: Time Difference: ' + games)
+            for (var i = 0; i < games.length; i++) {
+                console.log('NEW PLAY ALGORITHM: Time Difference: ' + games[i].timeStamp - Date.now())
+                if (games[i].timeStamp - Date.now() < (1000 * 60 * 60 * 24)) {
+                    if (games[i].userSearching == _id)
+                        ineligibleUsers.push(games[i].userFound)
+                    else
+                        ineligibleUsers.push(games[i].userSearching)
+                }
+            }
+            console.log('NEW PLAY ALGORITHM: ineligibleUsers: ' + ineligibleUsers)
+            UserModel.find({
+                _id: {
+                    $nin: ineligibleUsers
+                }
+            }, function (err, users) {
+                console.log('NEW PLAY ALGORITHM: Users: ' + users)
                 if (err) {
                     console.log(err)
-                    res.send('-110')
+                    res.send('-100d')
+                    return
                 }
-                console.log('New game saved')
-                var toReturn = {
-                    'username': user.username,
-                    'longitude': user.longitude,
-                    'latitude': user.latitude,
-                    'task': 'Finde heruas:;Eat a Döner;Find out Name', //first for task, following for list-items
-                    'taskType': 1, //0 for text, 1 for list
-                    'image': {
-                        'data': null,
-                        'contentType': null
-                    }
+                var eligibleUsers = []
+                for (var i = 0; i < users.length; i++) {
+                    console.log('NEW PLAY ALGORITHM: Distance: ' + getDistance(user.latitude, user.longitude, users[i].latitude, users[i].longitude, 'K'))
+                    if (getDistance(user.latitude, user.longitude, users[i].latitude, users[i].longitude, 'K') < 2000)
+                        eligibleUsers.push(users[i])
                 }
-                res.send(toReturn)
+                console.log('NEW PLAY ALGORITHM: ElibibleUsers: ' + eligibleUsers)
+                if (eligibleUsers.length > 0) {
+                    var otherPlayer = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)]
+
+                    var newGame = new GameModel({
+                        userSearching: _id,
+                        userFound: otherPlayer._id,
+                        ratedByUserSearched: 0,
+                        ratedByUserFound: 0,
+                        timeStamp: Date.now()
+                    })
+                    newGame.save(function (err) {
+                        if (err) {
+                            console.log(err)
+                            res.send('-110e')
+                        }
+                        console.log('New game saved')
+                        var toReturn = {
+                            'username': otherPlayer.username,
+                            'otherUserId': otherPlayer._id,
+                            'longitude': otherPlayer.longitude,
+                            'latitude': otherPlayer.latitude,
+                            'task': 'Finde heruas:;Eat a Döner;Find out Name', //first for task, following for list-items
+                            'taskType': 1, //0 for text, 1 for list
+                            'image': {
+                                'data': null,
+                                'contentType': null
+                            }
+                        }
+                        res.send(toReturn)
+                    })
+                } else {
+                    res.send('-1')
+                }
             })
-        }
+        })
+
     })
 }
+
 
 var handleRating = function (req, res) {
     var _id = req.body._id
@@ -226,11 +280,13 @@ function handleContactRequest(userId, otherUserId, wishesToStayInContact, res) {
                 ContactModel.remove({
                     _id: contact._id
                 }, function (err) {
-                    console.log(err)
-                    res.send('-120')
-                    return
+                    if (err) {
+                        console.log(err)
+                        res.send('-120')
+                        return
+                    }
+                    res.send('1')
                 })
-                res.send('1')
             }
         }
     })
@@ -297,7 +353,7 @@ var photoTest = function (req, res) {
     res.sendFile('/home/whou/Data/Weihnachtsbaum.jpg')
 }
 
-function distance(lat1, lon1, lat2, lon2, unit) {
+function getDistance(lat1, lon1, lat2, lon2, unit) {
     var radlat1 = Math.PI * lat1 / 180
     var radlat2 = Math.PI * lat2 / 180
     var radlon1 = Math.PI * lon1 / 180

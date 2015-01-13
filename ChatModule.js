@@ -214,6 +214,10 @@ var sendStandardMessage = function (req, res) {
     })
 }
 
+var openSSEConnection = function (req, res) {
+    res.send('-9999')
+}
+
 exports.getUsersCurrentlyPlayedWith = getUsersCurrentlyPlayedWith
 exports.getPreviousMessages = getPreviousMessages
 exports.getMessagesLeft = getMessagesLeft
@@ -221,3 +225,4 @@ exports.sendMessage = sendMessage
 exports.pushSearchStarted = pushSearchStarted
 exports.sendStandardMessage = sendStandardMessage
 exports.init = init
+exports.openSSEConnection = openSSEConnection

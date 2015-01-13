@@ -34,6 +34,7 @@ const upgradeMessagesPath = '/chat/upgradeMessages'
 const sendMessagePath = '/chat/sendMessage'
 const searchStartedPushPath = '/chat/searchStartedPush'
 const sendStandardMessagePath = '/chat/sendStandardMessage'
+const openSSEConnectionPath = '/chat/openSSEConnection'
 
 //Implement each module
 const playModule = require('./PlayModule')
@@ -162,6 +163,10 @@ app.post(searchStartedPushPath, cors(), function (req, res, next) {
 
 app.post(sendStandardMessagePath, cors(), function (req, res, next) {
     chatModule.sendStandardMessage(req, res)
+})
+
+app.get(openSSEConnectionPath, cors(), function (req, res, next) {
+    chatModule.openSSEConnection(req, res)
 })
 
 app.get('/test', function (req, res, next) {
