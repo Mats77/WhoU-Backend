@@ -41,9 +41,9 @@ var getUsersCurrentlyPlayedWith = function (req, res) {
             var contact = data[i]
             if (contact.verifiedByFirstUser == 1 && contact.verifiedBySecondUser == 1) {
                 if (contact.firstUserId == userId) {
-                    toReturn.push(contact.secondUserId)
-                } else {
                     toReturn.push(contact.firstUserId)
+                } else {
+                    toReturn.push(contact.secondUserId)
                 }
             }
         }
