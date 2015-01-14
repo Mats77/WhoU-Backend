@@ -35,12 +35,29 @@ chatModule.init()
 
 var app = express()
 ````
-and from thenon does nothing else than routing the requests.
+and from thenon does nothing else than routing the request and response objects. 
 
 #The Modules
 **The Registration Module:**
 
-It seems obvious to start with this module, because it is the first, which is used by a user during registration.
- 
+It seems obvious to start with this module, because it is the first module, which the users have to interact with. In its init() method a connection to the mongodb is opened and the UserSchema is declared. In Addition to that it offers the methods "register" and "delete".
+The register method creates a new user document, using the arguments passed by the client request, and responds with the id, which is given by the monogdb. Before creating a user it's verified, that the mail isn't in use yet. To avoid spam users it's allowed to have only one user per mail-account.
 
+```js
+var user = new UserModel({
+    pushId: '',                     //pushId for GCM or APN
+    username: req.body.username,
+    password: req.body.password,
+    mail: req.body.mail,
+    longitude: req.body.longitude,
+    latitude: req.body.latitude,
+    coinFactor: 1,                  //can be upgraded by a benefit. Has influence on how many coins the user get for                                       playing
+    coins: 0,                       //necessary to buy benefits
+    visible: 1,                     //flag if someone is eligible for being found by play-algorithm
+    photos: [],
+    benefits: [],                   //stores the benefits, bought by the user
+    usersToTalkWith: []             //if both users agreed to a chat after playing, a contact is stored here
+})
+```
 
+The second method is "delete", which takes a userId as argument and deletes the user.
