@@ -35,31 +35,42 @@ var init = function () {
 var register = function (req, res) {
     res.type('text/plain')
     if (req.body['username'] != null && req.body['password'] != null && req.body['mail'] != null) {
-        var user = new UserModel({
-            pushId: '',
-            username: req.body.username,
-            password: req.body.password,
-            mail: req.body.mail,
-            longitude: req.body.longitude,
-            latitude: req.body.latitude,
-            coinFactor: 1,
-            coins: 0,
-            visible: 1,
-            photos: [],
-            benefits: [],
-            usersToTalkWith: []
-        })
-        user.save(function (err) {
-            if (!err) {
-                console.log('User erstellt mit der id: ' + user.id)
-                res.send("" + user.id) //Everything worked, send Back UserId
+        UserModel.findOns({
+            'mail': req.body.mail
+        }, function (err, user) {
+            if (err) {
+                res.send('-100')
+                return
+            } else if (user == null) {
+                var user = new UserModel({
+                    pushId: '', //pushId for GCM or APN
+                    username: req.body.username,
+                    password: req.body.password,
+                    mail: req.body.mail,
+                    longitude: req.body.longitude,
+                    latitude: req.body.latitude,
+                    coinFactor: 1, //can be upgraded by a benefit. Has influence on how many coins the user get for playing
+                    coins: 0, //necessary to buy benefits
+                    visible: 1, //flag if someone is eligible for being found by play-algorithm
+                    photos: [],
+                    benefits: [], //stores the benefits, bought by the user
+                    usersToTalkWith: [] //if both users agreed to a chat after playing, a contact is stored here
+                })
+                user.save(function (err) {
+                    if (!err) {
+                        console.log('User erstellt mit der id: ' + user.id)
+                        res.send("" + user.id) //Everything worked, send Back UserId
+                    } else {
+                        console.log(err)
+                        res.send('-110') //DB-Connection Error
+                        return
+                    }
+                })
             } else {
-                console.log(err)
-                res.send('-100') //DB-Connection Error
+                res.send('-2')
                 return
             }
         })
-        console.log('Fertig')
     }
 }
 

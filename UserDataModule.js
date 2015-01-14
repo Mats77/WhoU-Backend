@@ -192,8 +192,15 @@ var savePhoto = function (req, res) {
 }
 
 var deletePhoto = function (req, res) {
+    var _id = req.params['_id']
+    var photoId = req.params['PID']
+    console.log('DELETE USER: ' + req.body._id)
+    console.log('DELETE USER: ' + req.body)
+    console.log('DELETE USER: ' + req)
+    console.log('DELETE USER: ' + _id)
+    console.log('DELETE USER: ' + photoId)
     UserModel.findOne({
-        _id: req.body._id
+        _id: _id
     }, function (err, user) {
         if (err) {
             res.send('-100')
@@ -203,26 +210,33 @@ var deletePhoto = function (req, res) {
             return
         } else {
             for (var i = user.photos.length - 1; i >= 0; i--) {
-                if (photo.id == req.body.photoId) {
+                if (user.photos[i].id == photoId) {
                     user.photos.splice(i, 1)
                     break
                 }
             }
-            UserModel.update({
-                _id: user.id
-            }, {
-                $set: {
-                    photos: user.photos
-                }
-            }, function (err) {
+            user.save(function (err) {
                 if (err) {
-                    res.send(err)
-                    return
-                } else {
-                    res.send('1')
+                    res.send('-110')
                     return
                 }
+                res.send('1')
             })
+            //            UserModel.update({
+            //                _id: user.id
+            //            }, {
+            //                $set: {
+            //                    photos: user.photos
+            //                }
+            //            }, function (err) {
+            //                if (err) {
+            //                    res.send(err)
+            //                    return
+            //                } else {
+            //                    res.send('1')
+            //                    return
+            //                }
+            //            })
         }
     })
 }
