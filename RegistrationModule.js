@@ -35,7 +35,7 @@ var init = function () {
 var register = function (req, res) {
     res.type('text/plain')
     if (req.body['username'] != null && req.body['password'] != null && req.body['mail'] != null) {
-        UserModel.findOns({
+        UserModel.findOne({
             'mail': req.body.mail
         }, function (err, user) {
             if (err) {

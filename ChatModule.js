@@ -1,5 +1,5 @@
 var mongoose = require('mongoose')
-    //var gcm = require('node-gcm')
+var gcm = require('node-gcm')
 
 var GameModel
 var UserModel
@@ -21,12 +21,12 @@ var init = function () {
 }
 
 var getUsersCurrentlyPlayedWith = function (req, res) {
-    var userId = req.params['_id']
+    var _id = req.param('_id')
     ContactModel.find({
         $or: [{
-            firstUser: userId
+            firstUserId: _id
                 }, {
-            secondUserId: userId
+            secondUserId: _id
                 }]
     }, function (err, data) {
         if (err) {
@@ -40,10 +40,10 @@ var getUsersCurrentlyPlayedWith = function (req, res) {
             console.log('CONTACT: ' + data[i])
             var contact = data[i]
             if (contact.verifiedByFirstUser == 1 && contact.verifiedBySecondUser == 1) {
-                if (contact.firstUserId == userId) {
-                    toReturn.push(contact.firstUserId)
-                } else {
+                if (contact.firstUserId == _id) {
                     toReturn.push(contact.secondUserId)
+                } else {
+                    toReturn.push(contact.firstUserId)
                 }
             }
         }
@@ -53,8 +53,10 @@ var getUsersCurrentlyPlayedWith = function (req, res) {
 }
 
 var getPreviousMessages = function (req, res) {
-    var _id = req.params['id']
-    var otherUserId = req.params['otherUser']
+    var _id = req.param('_id')
+    var otherUserId = req.param('otherUser')
+    console.log('PREVIOUS: ' + _id)
+    console.log('PREVIOUS:' + otherUserId)
     ContactModel.findOne({
         $or: [{
                 firstUserId: _id,
@@ -79,8 +81,8 @@ var getPreviousMessages = function (req, res) {
 }
 
 var getMessagesLeft = function (req, res) {
-    var _id = req.params['id']
-    var otherUserId = req.params['otherUser']
+    var _id = req.param('id')
+    var otherUserId = req.param('otherUser')
     ContactModel.findOne({
         $or: [{
                 firstUserId: _id,
@@ -111,6 +113,7 @@ var sendMessage = function (req, res) {
     var _id = req.body._id
     var otherUserId = req.body.otherUser
     var message = req.body.message
+    var timeStamp = req.body.timeStamp
 
     ContactModel.findOne({
         $or: [{
@@ -131,7 +134,8 @@ var sendMessage = function (req, res) {
         }
         contact.messages.push({
             userSent: _id,
-            message: message
+            message: message,
+            timeStamp: timeStamp
         })
 
         contact.save(function (err) {
@@ -140,7 +144,33 @@ var sendMessage = function (req, res) {
                 res.send('-110')
                 return
             }
-            res.send('1')
+            UserModel.findOne({
+                _id: otherUserId
+            }, function (err, user) {
+                if (err) {
+                    console.log(err)
+                    return
+                }
+                var push = new gcm.Message()
+
+                var sender = new gcm.Sender('AIzaSyA7nZKnoB8Gn1p8gqkR5avZYSwhrmlFxDU')
+                var registrationIds = [user.pushId]
+
+                // Value the payload data to send...
+
+                push.addData('message', message)
+                push.addData('title', 'Du hast eine neue Nachricht erhalten!')
+                push.addData('msgcnt', '1') // Shows up in the notification in the status bar
+                push.addData('soundname', 'beep.wav') //Sound to play upon notification receipt - put in the www folder in app
+                push.addData('isMessage', true)
+                push.addData('userId', otherUserId)
+                push.timeToLive = 3000
+
+                sender.send(push, registrationIds, 4, function (result) {
+                    console.log(result)
+                    res.send('1')
+                })
+            })
         })
     })
 }
@@ -159,24 +189,24 @@ var pushSearchStarted = function (req, res) {
             res.send('-4')
             return
         }
-        //var message = gcm.Message()
-        //
-        //var sender = new gcm.Sender('AIzaSyCDx8v9R0fMsAsjoAffF-P3FCFWXlvwLhg');
-        //var registrationIds = [user.pushId];
-        //
-        //// Value the payload data to send...
-        //message.addData('message', "\u270C Peace, Love \u2764 and PhoneGap \u2706!");
-        //message.addData('title', 'Push Notification Sample');
+        var message = new gcm.Message()
+
+        var sender = new gcm.Sender('AIzaSyA7nZKnoB8Gn1p8gqkR5avZYSwhrmlFxDU');
+        var registrationIds = [user.pushId];
+
+        // Value the payload data to send...
+        message.addData('message', "Achtung, es wird spannend ...."); //\u270C");
+        message.addData('title', 'Jemand sucht Dich!');
         //message.addData('msgcnt', '3'); // Shows up in the notification in the status bar
-        //message.addData('soundname', 'beep.wav'); //Sound to play upon notification receipt - put in the www folder in app
-        ////message.collapseKey = 'demo';
-        ////message.delayWhileIdle = true; //Default is false
-        //message.timeToLive = 3000;
-        //
-        //sender.send(message, registrationIds, 4, function (result) {
-        //    console.log(result);
-        //    res.send('1')
-        //});
+        message.addData('soundname', 'beep.wav'); //Sound to play upon notification receipt - put in the www folder in app
+        //message.collapseKey = 'demo';
+        //message.delayWhileIdle = true; //Default is false
+        message.timeToLive = 3000;
+
+        sender.send(message, registrationIds, 4, function (result) {
+            console.log(result);
+            res.send('1')
+        });
     })
 }
 
@@ -193,24 +223,24 @@ var sendStandardMessage = function (req, res) {
             res.send('-4')
             return
         }
-        //var message = gcm.Message()
-        //
-        //var sender = new gcm.Sender('AIzaSyCDx8v9R0fMsAsjoAffF-P3FCFWXlvwLhg');
-        //var registrationIds = [user.pushId];
-        //
-        //// Value the payload data to send...
-        //message.addData('message', "\u270C Peace, Love \u2764 and PhoneGap \u2706!");
-        //message.addData('title', 'Push Notification Sample');
+        var message = new gcm.Message()
+
+        var sender = new gcm.Sender('AIzaSyA7nZKnoB8Gn1p8gqkR5avZYSwhrmlFxDU');
+        var registrationIds = [user.pushId];
+
+        // Value the payload data to send...
+        message.addData('message', "Los mach auf dich aufmerksam!");
+        message.addData('title', 'Oh nein, du kannst nicht gefunden werden!');
         //message.addData('msgcnt', '3'); // Shows up in the notification in the status bar
-        //message.addData('soundname', 'beep.wav'); //Sound to play upon notification receipt - put in the www folder in app
-        ////message.collapseKey = 'demo';
-        ////message.delayWhileIdle = true; //Default is false
-        //message.timeToLive = 3000;
-        //
-        //sender.send(message, registrationIds, 4, function (result) {
-        //    console.log(result);
-        //    res.send('1')
-        //});
+        message.addData('soundname', 'beep.wav'); //Sound to play upon notification receipt - put in the www folder in app
+        //message.collapseKey = 'demo';
+        //message.delayWhileIdle = true; //Default is false
+        message.timeToLive = 3000;
+
+        sender.send(message, registrationIds, 4, function (result) {
+            console.log(result);
+            res.send('1')
+        });
     })
 }
 

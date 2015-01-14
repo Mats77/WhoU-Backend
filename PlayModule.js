@@ -41,6 +41,34 @@ var init = function () {
 
 var play = function (req, res) {
     var _id = req.body._id
+    var result = matchMe(_id, function (result) {
+        console.log('RESULT 1: ' + result.otherUserId)
+        if (typeof result === 'object') {
+            var newGame = new GameModel({
+                userSearching: _id,
+                userFound: result.otherUserId,
+                ratedByUserSearched: 0,
+                ratedByUserFound: 0,
+                timeStamp: Date.now()
+            })
+            newGame.save(function (err) {
+                if (err) {
+                    console.log(err)
+                    res.send('-110e')
+                    return
+                }
+                console.log('New game saved')
+                result.gameId = newGame._id
+                console.log('RESULT SENT: ' + result)
+                res.send(result)
+            })
+        } else {
+            res.send(result)
+        }
+    })
+}
+
+function matchMe(_id, callback) {
     var ineligibleUsers = []
     ineligibleUsers.push(_id)
     UserModel.findOne({
@@ -48,11 +76,9 @@ var play = function (req, res) {
     }, function (err, user) {
         if (err) {
             console.log(err)
-            res.send('-100a')
-            return
+            callback('-100a')
         } else if (user == null) {
-            res.send('-4b')
-            return
+            callback('-4b')
         }
 
         GameModel.find({
@@ -64,8 +90,7 @@ var play = function (req, res) {
         }, function (err, games) {
             if (err) {
                 console.log(err)
-                res.send('-100c')
-                return
+                callback('-100c')
             }
             console.log('NEW PLAY ALGORITHM: Time Difference: ' + games)
             for (var i = 0; i < games.length; i++) {
@@ -86,50 +111,41 @@ var play = function (req, res) {
                 console.log('NEW PLAY ALGORITHM: Users: ' + users)
                 if (err) {
                     console.log(err)
-                    res.send('-100d')
-                    return
+                    callback('-100d')
                 }
                 var eligibleUsers = []
                 for (var i = 0; i < users.length; i++) {
-                    console.log('NEW PLAY ALGORITHM: Distance: ' + getDistance(user.latitude, user.longitude, users[i].latitude, users[i].longitude, 'K'))
-                    if (getDistance(user.latitude, user.longitude, users[i].latitude, users[i].longitude, 'K') < 2000)
+                    if (getDistance(user.latitude, user.longitude, users[i].latitude, users[i].longitude, 'K') < 2000) {
                         eligibleUsers.push(users[i])
+                        console.log('NEW PLAY ALGORITHM: ' + users[i] + " is eligible")
+                    }
                 }
                 console.log('NEW PLAY ALGORITHM: ElibibleUsers: ' + eligibleUsers)
                 if (eligibleUsers.length > 0) {
                     var otherPlayer = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)]
 
-                    var newGame = new GameModel({
-                        userSearching: _id,
-                        userFound: otherPlayer._id,
-                        ratedByUserSearched: 0,
-                        ratedByUserFound: 0,
-                        timeStamp: Date.now()
-                    })
-                    newGame.save(function (err) {
-                        if (err) {
-                            console.log(err)
-                            res.send('-110e')
+                    console.log('NEW PLAY ALGORITHM: otherPlayer: ' + otherPlayer)
+
+                    var toReturn = {
+                        'username': otherPlayer.username,
+                        'otherUserId': otherPlayer._id,
+                        'longitude': otherPlayer.longitude,
+                        'latitude': otherPlayer.latitude,
+                        'task': 'Finde heruas:;Eat a Döner;Find out Name', //first for task, following for list-items
+                        'taskType': 1, //0 for text, 1 for list
+                        'image': {
+                            'data': null,
+                            'contentType': null
                         }
-                        console.log('New game saved')
-                        var toReturn = {
-                            'username': otherPlayer.username,
-                            'otherUserId': otherPlayer._id,
-                            'longitude': otherPlayer.longitude,
-                            'latitude': otherPlayer.latitude,
-                            'task': 'Finde heruas:;Eat a Döner;Find out Name', //first for task, following for list-items
-                            'taskType': 1, //0 for text, 1 for list
-                            'image': {
-                                'data': null,
-                                'contentType': null
-                            }
-                        }
-                        res.send(toReturn)
-                    })
+                    }
+                    console.log('NEW PLAY ALGORITHM returning: ' + toReturn)
+                    console.log('NEW PLAY ALGORITHM returning: ' + toReturn.username)
+                    callback(toReturn)
                 } else {
-                    res.send('-1')
+                    callback('-1')
                 }
             })
+
         })
 
     })
@@ -379,3 +395,4 @@ exports.handleRating = handleRating
 exports.init = init
 exports.photoTest = photoTest
 exports.getGamesToRate = getGamesToRate
+exports.matchMe = matchMe

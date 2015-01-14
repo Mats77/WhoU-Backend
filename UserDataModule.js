@@ -43,7 +43,8 @@ var getUserData = function (req, res) {
             userName: user.username,
             coins: user.coins,
             photoIds: photoIds,
-            profilePhotoId: profilePhotoId
+            profilePhotoId: profilePhotoId,
+            pushId: user.pushId
         }
         res.send(userToReturn)
     })
@@ -85,7 +86,8 @@ var getRecentEvents = function (req, res) {
                     events.push({
                         'type': 'played',
                         'date': data.timeStamp,
-                        'user': user.username
+                        'user': user.username,
+                        'userId': user._id
                     })
                 } else {
                     events.push({
@@ -192,11 +194,8 @@ var savePhoto = function (req, res) {
 }
 
 var deletePhoto = function (req, res) {
-    var _id = req.params['_id']
-    var photoId = req.params['PID']
-    console.log('DELETE USER: ' + req.body._id)
-    console.log('DELETE USER: ' + req.body)
-    console.log('DELETE USER: ' + req)
+    var _id = req.body._id
+    var photoId = req.body.PID
     console.log('DELETE USER: ' + _id)
     console.log('DELETE USER: ' + photoId)
     UserModel.findOne({
@@ -222,21 +221,6 @@ var deletePhoto = function (req, res) {
                 }
                 res.send('1')
             })
-            //            UserModel.update({
-            //                _id: user.id
-            //            }, {
-            //                $set: {
-            //                    photos: user.photos
-            //                }
-            //            }, function (err) {
-            //                if (err) {
-            //                    res.send(err)
-            //                    return
-            //                } else {
-            //                    res.send('1')
-            //                    return
-            //                }
-            //            })
         }
     })
 }
@@ -309,12 +293,14 @@ var updateProfilPhoto = function (req, res) {
     })
 }
 
-var insertPush = function (req, res) {
+var insertPushId = function (req, res) {
+    var _id = req.body._id
+    var pushId = req.body.pushId
     UserModel.update({
-        _id: req.body._id
+        _id: _id
     }, {
         $set: {
-            pushId: req.body.pushId
+            pushId: pushId
         }
     }, function (err) {
         if (err) {
@@ -335,4 +321,4 @@ exports.updateGPS = updateGPS
 exports.savePhoto = savePhoto
 exports.deletePhoto = deletePhoto
 exports.updateProfilPhoto = updateProfilPhoto
-exports.insertPush = insertPush
+exports.insertPushId = insertPushId

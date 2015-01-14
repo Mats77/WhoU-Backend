@@ -3,6 +3,8 @@ var db
 var BenefitModel
 var UserModel
 var ContactModel
+var GameModel
+const playModule = require('./PlayModule')
 
 var init = function () {
     mongoose.connect('mongodb://Mats:MobileProject.123@localhost:20766/whoU')
@@ -21,6 +23,7 @@ var init = function () {
         UserModel = require('mongoose').model('User')
         BenefitModel = mongoose.model('Benefit', benefitSchema)
         ContactModel = require('mongoose').model('Contact')
+        GameModel = require('mongoose').model('Game')
     })
 }
 
@@ -147,8 +150,76 @@ var upgradeMessageCount = function (req, res) {
         })
 }
 
+var skipUser = function (req, res) {
+    var _id = req.body._id
+    var gameId = req.body.gameId
+
+    var result = playModule.matchMe(_id, function (result) {
+            if (typeof result === 'object') {
+                GameModel.findOne({
+                    _id: gameId
+                }, function (err, game) {
+                    if (err) {
+                        res.send('-100')
+                        console.log(err)
+                        return
+                    } else if (game == null) {
+                        res.send('-13')
+                        return
+                    } else {
+                        game.userFound = result.otherUserId
+                        game.save(function (err) {
+                            if (err) {
+                                console.log(err)
+                                res.send('-110')
+                                return
+                            } else {
+                                UserModel.findOne({
+                                    _id: _id
+                                }, function (err, user) {
+                                    if (err) {
+                                        console.log(err)
+                                        res.send('-100')
+                                        return
+                                    } else if (user == null) {
+                                        res.send('-4')
+                                        return
+                                    }
+                                    console.log('user found ' + user)
+                                    for (var i = user.benefits.length - 1; 0 <= i; i--) {
+                                        if (user.benefits[i].BID == 1  && user.benefits[i].count == 1) {
+                                            user.benefits.splice(i)
+                                        } else if (user.benefits[i].BID == 1 && user.benefits[i].count > 1) {
+                                            user.benefits[i].count = user.benefits[i].count - 1
+                                        } else {
+                                            res.send('-18')
+                                            return
+                                        }
+                                        user.save(function (err) {
+                                            if (err) {
+                                                console.log(err)
+                                                res.send('-110')
+                                                return
+                                            }
+                                            res.send(result)
+                                        })
+                                    }
+                                })
+                            }
+                        })
+                    }
+
+                })
+            } else {
+                res.send(result)
+            }
+        })
+        //GAME ÄNDERN!
+}
+
 
 exports.init = init
 exports.getAllItems = getAllItems
 exports.buyItem = buyItem
 exports.upgradeMessageCount = upgradeMessageCount
+exports.skipUser = skipUser

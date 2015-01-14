@@ -16,6 +16,7 @@ const gamesToRatePath = '/play/rating/gamesToRate'
 const insertNewRatingPath = '/play/rating/insertNewRating'
 const allItemsPath = '/benefit/allItems'
 const buyItemPath = '/benefit/buyItem'
+const skipUserPath = '/benefit/skipUser'
 const userDataPath = '/userData/data'
 const recentEventsPath = '/userData/recentEvents'
 const changeModusPath = '/userData/changeModus'
@@ -89,7 +90,9 @@ app.post(newPhotoPath, cors(), function (req, res, next) {
     userDataModule.savePhoto(req, res)
 })
 
-app.delete(deletePhotoPath, cors(), function (req, res, next) {
+app.post(deletePhotoPath, cors(), function (req, res, next) {
+    console.log('Server: ' + req.params[0])
+    console.log('Server: ' + req.body)
     userDataModule.deletePhoto(req, res)
 })
 
@@ -131,6 +134,10 @@ app.get(allItemsPath, cors(), function (req, res, next) {
 
 app.post(buyItemPath, cors(), function (req, res, next) {
     benefitModule.buyItem(req, res)
+})
+
+app.put(skipUserPath, cors(), function (req, res, next) {
+    benefitModule.skipUser(req, res)
 })
 
 app.delete(deleteUserPath, cors(), function (req, res, next) {
