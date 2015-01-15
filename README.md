@@ -87,7 +87,7 @@ chatModule.init()
 
 var app = express()
 ````
-and from thenon does nothing else than routing the request and response objects. In case something went wrong the server sends an error code to the client, in which the occured error is handled. A collection of all possible error codes can be found below in this document. 
+and from thenon does nothing else than routing the request and response objects. In case something went wrong the server sends an error code to the client, in which the occured error is handled. A collection of all possible error codes can be found below in this document. If no data is requested a simple "1" is sent back to the client, so that it knows, that no problems occured on the server
 
 #The Modules
 **The Registration Module:**
@@ -136,9 +136,9 @@ This UserData Module is a huge and important one. It offers nine APIs which serv
 var isProfilPhoto = user.photos.length == 0 ? 1 : 0
 var photoId = user.photos.length == 0 ? 0 : user.photos[user.photos.length-1].id
 user.photos.push({
-    id: user.photos.length,             //0 or last element's id + 1
-    photoString: req.body.photoString,
-    isProfilPhoto: isProfilPhoto
+            id: user.photos.length,             //0 or last element's id + 1
+            photoString: req.body.photoString,
+            isProfilPhoto: isProfilPhoto
 })
 //user.save()
 ```
@@ -166,7 +166,122 @@ UpdateGPS, insertPushId and changeModus are very generic functions, which take t
 
 The play Module might be the most important one, because it contains the very core of our application, which is the player-matching-algorithm. Furthermore the logic to handle the ratings and therefore also the contact craetion, the algorithm which searches for the user's games, that haven't been rated are located in this module.
 
-TBD
+We thought of the following three arguments a player should have to be an eligible match. The first argument is, that the possible match hasn't played with the searching player for at least the last 24 hours. To assure that, we lookup all playing partners of the searching player of the last 24 hours an add them to an ineligible-list.
+
+```js
+//...fetching the games...
+for (var i = 0; i < games.length; i++) {
+            console.log('NEW PLAY ALGORITHM: Time Difference: ' + games[i].timeStamp - Date.now())
+            if (games[i].timeStamp - Date.now() < (1000 * 60 * 60 * 24)) {
+                        if (games[i].userSearching == _id)
+                                    ineligibleUsers.push(games[i].userFound)
+            else
+                        ineligibleUsers.push(games[i].userSearching)
+            }
+}
+//...second argument...
+```
+Secondly the destince between those two users shouldn't be more than 500 metres. Therefore we gather the latitude and longitude data every xxxx minutes. Those values will be updated, so that we are not collecting those data to create geoprofiles of our users. To narrow the number of possible matches we fetch all users from the mongodb, which are not ineligible because of their last game. After this step we check the distance between each pair. If the distance is below 500 metres the visibility of the possible match is checked. If both values are true, we found a possible match and the player is added to an eligible-list. As soon as all possible matches are in this list one player is picked randomly.
+
+```js
+//...first argument...
+var eligibleUsers = []
+for (var i = 0; i < users.length; i++) {
+            //Distance
+            if (getDistance(user.latitude, user.longitude, users[i].latitude, users[i].longitude, 'K') < 500) {
+                        //Visibility
+                        if(users[i].visible == 1)
+                                    eligibleUsers.push(users[i])
+            }
+}
+
+if (eligibleUsers.length > 0) {
+       var otherPlayer = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)]
+        //sending match to client
+}
+```
+
+This algorithm can be called either by the initial play request or by the skip-player benfit, which is going to be described in the next section.
+
+The second important part in this module is about what's happening after the game has been finished. We assume, that a game lasts about 30 minutes, so that we don't ask our users to confirm the end of the game. The client asks regularly if there are any not yet rated games on the server. If that is the case an array of those games is answered. To find out whether there are games, which have to be rated, all games, the requesting player played - either as the one searching or the one searched - are fetched from the database. Those, which are older than 30 minutes and not rated by him are sent back.
+
+```js
+//...fetching the games of the requesting user....
+for (var i = 0; i < games.length; i++) {
+            //requesting user was found
+            if (games[i].userFound == _id && games[i].ratedByUserFound == 0) {
+                        gamesToRate.push({
+                                    gameId: games[i]._id,
+                                    otherPlayerId: games[i].userSearching
+                        })
+            //requesting user was searching
+            } else if (games[i].userSearching == _id && games[i].ratedByUserSearched == 0) {
+                        gamesToRate.push({
+                                    gameId: games[i]._id,
+                                    otherPlayerId: games[i].userFound
+                        })
+            }
+}
+//...sending back the array...
+```
+
+In case the client receives at least one game to rate, the user can see with whome he played and can rate some things (more detailed description in the client). Afterwards the client calculates how many coins the rated user gets and sends a flag whether there is a whish to stac in contact. To handle this the "handleRating" method is used. In the first part of this method the coins are added to the user's account.
+
+```js
+//...fetching user from database....
+ if (user.coins != null)
+            user.coins += (coins * user.coinFactor)
+else
+            user.coins = (coins * user.coinFactor)
+//since the coinfactor is a benefit for 10 games, it has to be reduced for everyone played and eventually removed
+if (user.coinFactor != 1) {
+            for (var i = user.benefits.length - 1; 0 <= i; i--) {
+                    if (user.benefits[i].id == 4) {
+                        user.benefits[i].counter = user.benefits[i].counter - 1
+                        if (user.benefits[i].counter == 0)
+                            user.benefits[i].splice(i,1)
+                    }
+                }}
+}
+
+```
+
+After this addition has been succesfully finished the updated user data are saved. Thereafter the appropriate game is fetched from the database and the flag, that this user has rated the game. Lastly this method calls the "handleContactRequest" method.
+
+This method distinghuishes two different possibilities firstly. He might be the first one who rated this game or the second one. In case he is the first one a new document is created in the database and it is saved whether he wants to stay in contact or not and the method is done sending an "1".
+
+```js
+//he is the first one who rated the game, so no contact could be found
+else if (contact == null) {
+            //new document created.
+            var newContact = new ContactModel({
+                        firstUserId: userId,
+                        secondUserId: otherUserId,
+                        verifiedByFirstUser: wishesToStayInContact,
+                        verifiedBySecondUser: 0,
+                        messagesLeftFirstUser: 30,
+                        messagesLeftSecondUser: 30,
+                        messages: []
+            }).save(function (err) {
+                        //...
+            }
+}
+```
+
+In case he is not the first one the method has to handle two different possibilities again. The first user might want to stay in contact or not. If he doesn't want to stay in contact the contact document can be deleted and the method is done again. Otherwise we have to check if the second user wants to stay in contact too. Assuming that is true, the contact document is updated and the chatting can begin. Alternatively the document is deleted.
+
+```js
+
+if ((contact.verifiedByFirstUser == 1 || contact.verifiedBySecondUser == 1) && wishesToStayInContact) {
+            ContactModel.update({
+                        //updating query
+} else {
+            ContactModel.remove({
+                        //removing query
+            })
+}
+
+```
 
 **The Benefit Module:**
 
