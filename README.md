@@ -283,13 +283,107 @@ if ((contact.verifiedByFirstUser == 1 || contact.verifiedBySecondUser == 1) && w
 
 ```
 
-**The Benefit Module:**
-
-TBD
-
 **The Chat Module:**
 
-TBD
+The chat module can be split up into two parts. While the first one provides necessary data, the second one is responsible for transmitting messages and initializing push notifications. Necessary data are the users, who can be talked to in the first place. Those requests are handled in the "getUsersCurrentlyPlayedWith" method. All contacts, in which the requesting user is involved in are fetched from the database. Then it is evaluated which is the userId of the other user. All other userIds are sent as an array back to the client. Data like the name or the profil picture of the chat partners are fetched in separate requests. 
+
+Additionally data like the messages, which have already been sent between those two users are interesting for the client. Therefore we created the "getPreviousMessages" API. It simply takes the id of the requesting user and the id of his chat partner as arguments. Those arguments are passed into the contact collection of the database to find the proper contact. In this document the messages are stored as an array of JSON containing the message itself, a timestamp and a field for identifying which user is the author of this message.
+
+Since users have only a decent amount of messages - 30 by default - to send in each chat, an API to request the messages left is necessary. This API takes the ids of the requesting user as well as of the chat partner, looks the proper data up in the database and sends the answer back to the client.
+
+That leads us to the second part of the chat module. Most important here is the "sendMessage" method. The first steps of this method are to find the proper user, who wants to send the message and the contact that connects him to his chat partner. Then we have to check, if he still have a message left. Otherwise an error occurs.
+
+```js
+//...fetching data from database...
+if (contact.firstUserId == _id) {
+            if (contact.messagesLeftFirstUser > 0) {
+                contact.messagesLeftFirstUser = contact.messagesLeftFirstUser - 1
+            } else {
+                res.send('-xxxxx')
+                return
+            }
+}else{
+//same with second userId
+}
+//...sending the message...
+```
+
+In case he still has enough messages left and no errors occur updating the database, a new request is executed to find the pushId of the user, that has to be notified. Finally the push notification is set up and sent. At tho current state of development we only support push notifications to android users, because we didn't have a possibility to test this on an iOS device. Sending the push notification is done using the Google Cloud Messaging Service (GCM). Firstly the message object is created before it is filled with its payload and finally sent.
+
+```js
+//creating message and sender object
+var push = new gcm.Message()
+var sender = new gcm.Sender('AIzaSyA7nZKnoB8Gn1p8gqkR5avZYSwhrmlFxDU')
+
+//settinf up the payload --> for example title, message, sound and further necassary information
+var registrationIds = [user.pushId]
+push.addData('message', message)
+push.addData('title', 'Du hast eine neue Nachricht erhalten!')
+push.addData('msgcnt', '1')
+push.addData('soundname', 'beep.wav') 
+push.addData('isMessage', true)
+push.addData('userId', otherUserId)
+push.timeToLive = 3000
+
+//sending
+sender.send(push, registrationIds, 4, function (result) {
+            console.log(result)
+            res.send('1')
+})
+
+```
+
+In addition to those messages described above we added two more APIs, that use push notifications. They are meant to increase the user experience while sending a push as soon as a game starts and in case someone can't find his matching partner he can "push for help". Those APIs are realised in the methods "pushSearchStarted" and "sendStandardMessage".
+
+**The Benefit Module:**
+
+Benefits can be bougth by users, who played who-U enough to earn a decent amount of coins. With benefits the convenience of the user experience can be increased a bit. For example more messages can be sent or users, who were matched can be skipped.
+
+Firstly this module contains a method "getAllBenefits", which just fetches all the different benefit documents from the benefit collection out of the mongodb and returns them as an JSON array to the client. The answer contains data like the name, price, description and id of the benefits.
+
+Secondly there are two methods in this module which handle the purchasing process of benefits and one, that handles the benefit effects. Why we needed two different methods for that is going to be explained in the following. Obviously there is the "buyItem" method. It is responsible for the purchasing of all benefits except upgrading the messagesleft. The reason is, that further information are needed for the lastly mentioned benefit and it isn't stored but immediately redeemed.
+
+The first part of "buyItem" fetches the requesting user and the wished benefit from the different collections in the database. If the process was succesfull, the cost of the benefits are compared to amount of the user's coins. Actually this comparison is already done in the client, but we thought it to be clever to use some defensive programming here to avoid exploits, which can occur due to network latency or something else. 
+
+```js
+if (user.coins >= (item.price * req.body.count)) {
+            user.coins = (user.coins - (Number(item.price) * Number(req.body.count)))
+```
+
+Finally in the third part the benefits array in the user model gets updated. We xxxxx (UNTERSCHEIDEN) whether the bought item is a benefit, that the user had at least once before or not. Depending on that we either have to increase the counter or add a new benefit. A special one in this case is the more points pre game benefit because you immediately get 10 counts with one purchase of the benefit.
+
+```js
+
+//3 part
+
+//checking it item alredy exists in the benefit array
+var itemAlreadyExistsAtLeastOnce = false
+for (var i = 0; i < user.benefits.length; i++) {
+            if (user.benefits[i].BID == item.id) {
+                        //checking if bought benefit is more points per game
+                        if (user.benefits.id == 4) {
+                                    user.benefits[i].count = user.benefits[i].count + 10
+                                    itemAlreadyExistsAtLeastOnce = true
+                        } else {
+                                    user.benefits[i].count = user.benefits[i].count + 1
+                                    itemAlreadyExistsAtLeastOnce = true
+                        }
+            }
+}
+//if benefit is new, add it to array
+if (!itemAlreadyExistsAtLeastOnce) {
+            user.benefits.push({
+                        BID: item.id,
+                        count: req.body.count
+            })
+}
+
+```
+
+Since we need additional data to update the message count we created a specific API for that purpose. It takes the userId of the user who buys the messages and the id of the user he wants to send the additional messages to. Afterwards a simple increasing update of the proper contact document is done in the database.
+
+A little more complex is the redemption of the skip user benefit, which is the last method in this module. The complexity arise with the fact that the game document is created after the two players are matched. So the user can't skip his match before the game is created. Therefore we need the gameId to keep the game collection consistent when reddeming this benefit. That's what's actually done in the first method's part. The second part updates the requesting user's benefit count and sends the answer.
+
 
 #Error Codes
 
