@@ -6,6 +6,7 @@ var ContactModel
 var GameModel
 const playModule = require('./PlayModule')
 
+//db initialization
 var init = function () {
     mongoose.connect('mongodb://Mats:MobileProject.123@localhost:20766/whoU')
     db = mongoose.connection
@@ -27,6 +28,7 @@ var init = function () {
     })
 }
 
+//returning all possible benefits
 var getAllItems = function (req, res) {
     var items = BenefitModel.find({}, function (err, data) {
         if (err) {
@@ -38,8 +40,14 @@ var getAllItems = function (req, res) {
 }
 
 var buyItem = function (req, res) {
+    var _id = req.body._id
+    var BID = req.body.BID
+
+    //1 part
+
+    //fetching user and requested benefit
     UserModel.findOne({
-        _id: req.body._id
+        _id: _id
     }, function (err, user) {
         if (err) {
             res.send('-100')
@@ -49,7 +57,7 @@ var buyItem = function (req, res) {
             return
         } else {
             BenefitModel.findOne({
-                id: req.body.BID
+                id: BID
             }, function (err, item) {
                 if (err) {
                     res.send('-100')
@@ -58,54 +66,41 @@ var buyItem = function (req, res) {
                     res.send('-7')
                     return
                 } else {
+
+                    //2 part
+
+                    //checking if user has coins --> defensie programming
+                    //and reducing amount of coins
                     if (user.coins >= (item.price * req.body.count)) {
                         user.coins = (user.coins - (Number(item.price) * Number(req.body.count)))
-                        if (item.id == 4) {
-                            if (user.coinFactor == 1) {
-                                user.benefits.push({
-                                    BID: 4,
-                                    count: 10
-                                })
-                            } else {
-                                for (var benefit in user.benefits) {
-                                    if (benefit.id == 4)
-                                        benefit.count = benefit.count + 10
-                                }
-                            }
-                        } else {
-                            if (user.benefits.length == 0) {
-                                user.benefits = [
-                                    {
-                                        BID: item.id,
-                                        count: req.body.count
-                                    }
-                                ]
-                            } else {
-                                var itemAlreadyExistsAtLeastOnce = false
-                                for (var i = 0; i < user.benefits.length; i++) {
-                                    if (user.benefits[i].BID == item.id) {
-                                        user.benefits[i].count = user.benefits[i].count + req.body.count
-                                        itemAlreadyExistsAtLeastOnce = true
-                                    }
-                                }
-                                if (!itemAlreadyExistsAtLeastOnce) {
-                                    user.benefits.push({
-                                        BID: item.id,
-                                        count: req.body.count
-                                    })
+
+                        //3 part
+
+                        //adding benefit to user's benfit array
+                        //if he already has bought this benefit and not spent it yet, increase amount, otherwise add new JSON to array
+                        var itemAlreadyExistsAtLeastOnce = false
+                        for (var i = 0; i < user.benefits.length; i++) {
+                            if (user.benefits[i].BID == item.id) {
+                                if (user.benefits.id == 4) {
+                                    user.benefits[i].count = user.benefits[i].count + 10
+                                    itemAlreadyExistsAtLeastOnce = true
+                                } else {
+                                    user.benefits[i].count = user.benefits[i].count + 1
+                                    itemAlreadyExistsAtLeastOnce = true
                                 }
                             }
                         }
-                        UserModel.update({
-                            _id: user.id
-                        }, {
-                            $set: {
-                                benefits: user.benefits,
-                                coins: user.coins
-                            }
-                        }, function (err) {
+                        if (!itemAlreadyExistsAtLeastOnce) {
+                            user.benefits.push({
+                                BID: item.id,
+                                count: req.body.count
+                            })
+                        }
+
+                        //updating user and handling errors
+                        user.save(function (err) {
                             if (err) {
-                                res.send(err)
+                                res.send('-110')
                                 return
                             } else {
                                 res.send('1')
@@ -123,98 +118,135 @@ var buyItem = function (req, res) {
     })
 }
 
+//special API for upgrading Messages, because immediate redeeming
 var upgradeMessageCount = function (req, res) {
     var _id = req.body._id
     var otherUserId = req.body.otherUser
-    ContactModel.update({
-            $or: [{
-                firstUserId: _id,
-                secondUserId: otherUserId
+
+    //decreasing coins of requesting user
+    UserModel.update({
+        _id: _id
+    }, {
+        $inc: {
+            coins: -15
+        }
+    }, function (err) {
+        if (err) {
+            console.log(err)
+            res.send('-110')
+            return
+        }
+        //and upgrading messages left in contact model
+        ContactModel.update({
+                $or: [{
+                    firstUserId: _id,
+                    secondUserId: otherUserId
         }, {
-                firstUserId: otherUserId,
-                secondUserId: _id
+                    firstUserId: otherUserId,
+                    secondUserId: _id
         }]
-        }, {
-            $inc: {
-                messagesLeftFirstUser: 30,
-                messagesLeftSecondUser: 30
-            }
-        },
-        function (err) {
-            if (err) {
-                console.log(err)
-                res.send('-100')
-                return
-            }
-            res.send('1')
-        })
+            }, {
+                $inc: {
+                    messagesLeftFirstUser: 30,
+                    messagesLeftSecondUser: 30
+                }
+            },
+            function (err) {
+                if (err) {
+                    console.log(err)
+                    res.send('-100')
+                    return
+                }
+                res.send('1')
+            })
+    })
 }
 
 var skipUser = function (req, res) {
     var _id = req.body._id
     var gameId = req.body.gameId
 
-    var result = playModule.matchMe(_id, function (result) {
-            if (typeof result === 'object') {
-                GameModel.findOne({
-                    _id: gameId
-                }, function (err, game) {
-                    if (err) {
-                        res.send('-100')
-                        console.log(err)
-                        return
-                    } else if (game == null) {
-                        res.send('-13')
-                        return
-                    } else {
-                        game.userFound = result.otherUserId
-                        game.save(function (err) {
-                            if (err) {
-                                console.log(err)
-                                res.send('-110')
-                                return
-                            } else {
-                                UserModel.findOne({
-                                    _id: _id
-                                }, function (err, user) {
-                                    if (err) {
-                                        console.log(err)
-                                        res.send('-100')
-                                        return
-                                    } else if (user == null) {
-                                        res.send('-4')
+    playModule.matchMe(_id, function (result) {
+        //1 part
+
+        //check if matching algorithm returned an object or an error code
+        if (typeof result === 'object') {
+            GameModel.findOne({
+                _id: gameId
+            }, function (err, game) {
+                if (err) {
+                    res.send('-100')
+                    console.log(err)
+                    return
+                } else if (game == null) {
+                    res.send('-13')
+                    return
+                } else {
+
+                    //updating the user foud in the game
+                    //the document was already created after the first user has been matched
+                    //because the user was matched and the game has already been safed a rematch is algorithmically not possible
+                    game.userFound = result.otherUserId
+                    game.save(function (err) {
+                        if (err) {
+                            console.log(err)
+                            res.send('-110')
+                            return
+                        } else {
+
+                            //2 part
+
+                            //creating the JSON to return
+                            UserModel.findOne({
+                                _id: _id
+                            }, function (err, user) {
+                                if (err) {
+                                    console.log(err)
+                                    res.send('-100')
+                                    return
+                                } else if (user == null) {
+                                    res.send('-4')
+                                    return
+                                }
+                                console.log('user found ' + user)
+
+                                //decreasing the benefit count
+                                for (var i = user.benefits.length - 1; 0 <= i; i--) {
+                                    if (user.benefits[i].BID == 1  && user.benefits[i].count == 1) {
+                                        user.benefits.splice(i)
+                                    } else if (user.benefits[i].BID == 1 && user.benefits[i].count > 1) {
+                                        user.benefits[i].count = user.benefits[i].count - 1
+                                    } else {
+                                        res.send('-18')
                                         return
                                     }
-                                    console.log('user found ' + user)
-                                    for (var i = user.benefits.length - 1; 0 <= i; i--) {
-                                        if (user.benefits[i].BID == 1  && user.benefits[i].count == 1) {
-                                            user.benefits.splice(i)
-                                        } else if (user.benefits[i].BID == 1 && user.benefits[i].count > 1) {
-                                            user.benefits[i].count = user.benefits[i].count - 1
-                                        } else {
-                                            res.send('-18')
+
+                                    //3 part
+
+                                    //saving the user with decrased benefit amount
+                                    user.save(function (err) {
+                                        if (err) {
+                                            console.log(err)
+                                            res.send('-110')
                                             return
                                         }
-                                        user.save(function (err) {
-                                            if (err) {
-                                                console.log(err)
-                                                res.send('-110')
-                                                return
-                                            }
-                                            res.send(result)
-                                        })
-                                    }
-                                })
-                            }
-                        })
-                    }
 
-                })
-            } else {
-                res.send(result)
-            }
-        })
-        //GAME ÄNDERN!
+                                        //returning the newly matched user
+                                        console.log('Skip user returning: ' + result)
+                                        res.send(result)
+                                    })
+                                }
+                            })
+                        }
+                    })
+                }
+
+            })
+        } else {
+            res.send(result)
+        }
+    })
+    //GAME ÄNDERN!
 }
 
 

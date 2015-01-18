@@ -1,5 +1,5 @@
 const request = require('request')
-const host = 'http://localhost:'
+const host = 'https://whou.sabic.uberspace.de/api'
 const port = 61234
 const newUserPath = '/newUser'
 const loginWithMailPath = '/login/mail/'
@@ -35,7 +35,7 @@ function createNewUser(name, pwd, mail, longitude, latitude) {
         'latitude': latitude
     }
 
-    request.post(host + port + newUserPath, {
+    request.post(host + newUserPath, {
         form: user
     }, function (err, response, body) {
         if (err) {
@@ -47,15 +47,15 @@ function createNewUser(name, pwd, mail, longitude, latitude) {
         } //Connection-Error
         userId = body
         console.log('Everything alright with createNewUser: ' + body)
-        successfullCount++
-        printResult()
-        searchPartnerToPlayWith(userId)
-        getUserData(userId)
-        changeModus(userId, 1)
-        insertNewRating(userId, 50)
-        updateGPS(userId, 10, 10)
-        savePhoto(userId, "123g87oerghf8owcz4np8z34xm984czn534p834ünv5npzc25nnz938p4f5nüu13p8")
-        deletePhoto(userId, 1)
+        //        successfullCount++
+        //        printResult()
+        //        searchPartnerToPlayWith(userId)
+        //        getUserData(userId)
+        //        changeModus(userId, 1)
+        //        insertNewRating(userId, 50)
+        //        updateGPS(userId, 10, 10)
+        //        savePhoto(userId, "123g87oerghf8owcz4np8z34xm984czn534p834ünv5npzc25nnz938p4f5nüu13p8")
+        //        deletePhoto(userId, 1)
     })
 }
 
@@ -400,6 +400,6 @@ var deletePhoto = function (userId, photoId) {
     })
 }
 
-createNewUser('admin', 'admin', 'test@test.de')
-logUserInWithMail('test@test.de', 'admin')
-getAllBenefits()
+createNewUser('rollo', 'rollo', 'rollo@rollo.de')
+//logUserInWithMail('test@test.de', 'admin')
+//getAllBenefits()

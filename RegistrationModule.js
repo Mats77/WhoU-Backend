@@ -3,6 +3,7 @@ var fs = require('fs')
 var db
 var UserModel
 
+//setting up db
 var init = function () {
     mongoose.connect('mongodb://Mats:MobileProject.123@localhost:20766/whoU')
     db = mongoose.connection
@@ -12,6 +13,8 @@ var init = function () {
     })
     db.once('open', function () {
         console.log('open')
+
+        //setting up userSchema
         var userSchema = mongoose.Schema({
             pushId: String,
             username: String,
@@ -20,7 +23,6 @@ var init = function () {
             sessionkey: String,
             longitude: Number,
             latitude: Number,
-            modus: Number,
             coins: Number,
             visible: Number,
             coinFactor: Number,
@@ -34,14 +36,21 @@ var init = function () {
 
 var register = function (req, res) {
     res.type('text/plain')
-    if (req.body['username'] != null && req.body['password'] != null && req.body['mail'] != null) {
+    var username = req.body.username
+    var password = req.body.password
+    var mail = req.body.mail
+    if (username != null && password != null && mail != null) {
+
+        //check if mail is already in use
         UserModel.findOne({
-            'mail': req.body.mail
+            'mail': mail
         }, function (err, user) {
             if (err) {
                 res.send('-100')
                 return
             } else if (user == null) {
+
+                //creating user
                 var user = new UserModel({
                     pushId: '', //pushId for GCM or APN
                     username: req.body.username,
@@ -71,9 +80,13 @@ var register = function (req, res) {
                 return
             }
         })
+    } else {
+        res.send('-15')
+        return
     }
 }
 
+//not implemented in client, only for testing purposes
 var deleteUser = function (req, res) {
     UserModel.remove({
         _id: req.body._id
@@ -87,6 +100,7 @@ var deleteUser = function (req, res) {
     })
 }
 
+//exporting the API-methods so that they can be called by the server.js
 exports.register = register
 exports.init = init
 exports.deleteUser = deleteUser

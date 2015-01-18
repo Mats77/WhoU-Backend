@@ -35,7 +35,6 @@ const upgradeMessagesPath = '/chat/upgradeMessages'
 const sendMessagePath = '/chat/sendMessage'
 const searchStartedPushPath = '/chat/searchStartedPush'
 const sendStandardMessagePath = '/chat/sendStandardMessage'
-const openSSEConnectionPath = '/chat/openSSEConnection'
 
 //Implement each module
 const playModule = require('./PlayModule')
@@ -46,6 +45,7 @@ const userDataModule = require('./UserDataModule')
 const benefitModule = require('./BenefitModule')
 const initModule = require('./InitModule')
 
+//Initialization methods of each module --> setting up db connection for example
 registrationModule.init() //First!!!
 playModule.init() //second!!
 loginModule.init()
@@ -53,15 +53,15 @@ userDataModule.init()
 benefitModule.init()
 chatModule.init()
 
+//setting up the node-server
 var app = express()
-
 app.use(bodyParser.urlencoded({
     extended: 'false'
 }))
 app.use(bodyParser.json())
 app.use(cors())
 
-
+//each API is built the same. These methods route the different requests into the modules and pass the request and response objects as arguments
 app.post(newUserPath, cors(), function (req, res, next) {
     registrationModule.register(req, res)
 })
@@ -172,13 +172,9 @@ app.post(sendStandardMessagePath, cors(), function (req, res, next) {
     chatModule.sendStandardMessage(req, res)
 })
 
-app.get(openSSEConnectionPath, cors(), function (req, res, next) {
-    chatModule.openSSEConnection(req, res)
-})
-
 app.get('/test', function (req, res, next) {
     playModule.photoTest(req, res)
 })
 
-
+//server starts
 app.listen(port)

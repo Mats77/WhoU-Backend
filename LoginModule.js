@@ -2,6 +2,7 @@ var mongoose = require('mongoose')
 var db
 var UserModel
 
+//db initialization
 var init = function () {
     mongoose.connect('mongodb://Mats:MobileProject.123@localhost:20766/whoU')
     db = mongoose.connection
@@ -15,33 +16,38 @@ var init = function () {
     })
 }
 
+//first login on a device
 var loginWithMail = function (req, res) {
-    res.type('text/plain')
-    var credentials = {
-        'mail': req.param('mail'),
-        'password': req.param('password')
-    }
-    var sessionkey = Math.random() * 1e20
+    var mail = req.param('mail')
+    var password = req.param('password')
+    console.log('LOGIN WITH MAIL: mail + password')
+
 
     UserModel.findOne({
-        mail: credentials.mail,
-        password: credentials.password
+        mail: mail,
+        password: password
     }, function (err, user) {
         if (err) {
-            console.err
+            console.log(err)
             res.send('-100') //Error with database Connection
-            return console.err
+            return
         } else if (user == null) {
             console.log('No User found')
-            return res.send('-3') //No User Found
+            res.send('-3') //No User Found
+            return
         } else {
+            //creating a random 20-digit sessionkey
+            var sessionkey = Math.random() * 1e20
             user.sessionkey = sessionkey
+
+            //saving to db
             user.save(function (err) {
                 if (err) {
                     console.log(err)
                     res.send('-4')
                     return
                 }
+                //and returning to client
                 res.send({
                     'UID': user._id,
                     'SessionKey': sessionkey.toString()
@@ -51,46 +57,50 @@ var loginWithMail = function (req, res) {
     })
 }
 
+//all subsequent device done automatically
 var loginWithSessionKey = function (req, res) {
-    res.type('text/plain')
-    var credentials = {
-        '_id': req.param('_id'),
-        'sessionkey': req.param('sessionkey')
-    }
-    console.log(credentials)
+    var _id = req.param('_id')
+    var sessionkey = req.param('sessionkey')
+
+    //checking if user _id with sessionkey can be found
     UserModel.findOne({
-        _id: credentials._id,
-        sessionkey: credentials.sessionkey
+        _id: _id,
+        sessionkey: sessionkey
     }, function (err, user) {
         if (err) {
-            res.send(err)
-            return console.err
+            res.send('-100')
+            console.log(err)
+            return
         } else if (user == null) {
             res.send('-4') //No User found
             return
         }
-        console.log('User: ' + user)
         res.send(user)
     })
 }
 
 var logout = function (req, res) {
+    var _id = req.body._id
+
     UserModel.findOne({
-        _id: req.body._id
+        _id: _id
     }, function (err, user) {
         if (err) {
-            console.err
+            console.log(err)
             res.send('-100') //Error with database Connection
-            return console.err
+            return
         } else if (user == null) {
             console.log('No User found')
-            return res.send('-3') //No User Found
+            res.send('-3') //No User Found
+            return
         } else {
+            //deleting sessionkey in logout process
             user.sessionkey = null
             user.save(function (err) {
                 if (err) {
                     res.send('-4')
-                    return console.log(err)
+                    console.log(err)
+                    return
                 }
                 res.send('1')
             })

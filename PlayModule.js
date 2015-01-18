@@ -3,8 +3,8 @@ var db
 var UserModel
 var GameModel
 var ContactModel
-    //var allDone = false
 
+//db initialization, and setting up Game and Contact-Schema
 var init = function () {
     mongoose.connect('mongodb://Mats:MobileProject.123@localhost:20766/whoU')
     db = mongoose.connection
@@ -38,12 +38,16 @@ var init = function () {
     })
 }
 
-
+//the 
 var play = function (req, res) {
     var _id = req.body._id
     var result = matchMe(_id, function (result) {
         console.log('RESULT 1: ' + result.otherUserId)
+
+        //check if matchingAlgorithm returned a user
         if (typeof result === 'object') {
+
+            //creating and saving game object
             var newGame = new GameModel({
                 userSearching: _id,
                 userFound: result.otherUserId,
@@ -51,6 +55,7 @@ var play = function (req, res) {
                 ratedByUserFound: 0,
                 timeStamp: Date.now()
             })
+
             newGame.save(function (err) {
                 if (err) {
                     console.log(err)
@@ -60,15 +65,21 @@ var play = function (req, res) {
                 console.log('New game saved')
                 result.gameId = newGame._id
                 console.log('RESULT SENT: ' + result)
+
+                //return game object to client
                 res.send(result)
             })
+
+            //if matching algorithm returned a error code, pass is to client
         } else {
             res.send(result)
         }
     })
 }
 
+//The algorithm to match players
 function matchMe(_id, callback) {
+    //adding the user himself to ineligible users
     var ineligibleUsers = []
     ineligibleUsers.push(_id)
     UserModel.findOne({
@@ -76,11 +87,12 @@ function matchMe(_id, callback) {
     }, function (err, user) {
         if (err) {
             console.log(err)
-            callback('-100a')
+            callback('-100')
         } else if (user == null) {
-            callback('-4b')
+            callback('-4')
         }
 
+        //adding users recently played with to ineligible users
         GameModel.find({
             $or: [{
                 userSearching: _id
@@ -90,7 +102,7 @@ function matchMe(_id, callback) {
         }, function (err, games) {
             if (err) {
                 console.log(err)
-                callback('-100c')
+                callback('-100')
             }
             console.log('NEW PLAY ALGORITHM: Time Difference: ' + games)
             for (var i = 0; i < games.length; i++) {
@@ -103,6 +115,8 @@ function matchMe(_id, callback) {
                 }
             }
             console.log('NEW PLAY ALGORITHM: ineligibleUsers: ' + ineligibleUsers)
+
+            //fetch users, which are not ineligible
             UserModel.find({
                 _id: {
                     $nin: ineligibleUsers
@@ -113,14 +127,18 @@ function matchMe(_id, callback) {
                     console.log(err)
                     callback('-100d')
                 }
+
+                //add visible and nearby users to eligibleUsers
                 var eligibleUsers = []
                 for (var i = 0; i < users.length; i++) {
-                    if (getDistance(user.latitude, user.longitude, users[i].latitude, users[i].longitude, 'K') < 2000) {
-                        eligibleUsers.push(users[i])
-                        console.log('NEW PLAY ALGORITHM: ' + users[i] + " is eligible")
+                    if (getDistance(user.latitude, user.longitude, users[i].latitude, users[i].longitude, 'K') < 500) {
+                        if (users[i].visible == 1)
+                            eligibleUsers.push(users[i])
                     }
                 }
                 console.log('NEW PLAY ALGORITHM: ElibibleUsers: ' + eligibleUsers)
+
+                //if there are one or more eligible Users return a random one
                 if (eligibleUsers.length > 0) {
                     var otherPlayer = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)]
 
@@ -131,7 +149,7 @@ function matchMe(_id, callback) {
                         'otherUserId': otherPlayer._id,
                         'longitude': otherPlayer.longitude,
                         'latitude': otherPlayer.latitude,
-                        'task': 'Finde heruas:;Eat a Döner;Find out Name', //first for task, following for list-items
+                        'task': 'Finde heraus:;Eat a Döner;Find out Name', //first for task, following for list-items
                         'taskType': 1, //0 for text, 1 for list
                         'image': {
                             'data': null,
@@ -141,6 +159,8 @@ function matchMe(_id, callback) {
                     console.log('NEW PLAY ALGORITHM returning: ' + toReturn)
                     console.log('NEW PLAY ALGORITHM returning: ' + toReturn.username)
                     callback(toReturn)
+
+                    //signal, that no users can be matched
                 } else {
                     callback('-1')
                 }
@@ -153,39 +173,52 @@ function matchMe(_id, callback) {
 
 
 var handleRating = function (req, res) {
+    //reading out the arguments
     var _id = req.body._id
     var coins = req.body.coins
     var gameId = req.body.gameId
     var stayInContact = req.body.stayInContact
-    console.log(req.body)
 
+    //fetching the user to be rated from the db
     UserModel.findOne({
         _id: _id
     }, function (err, user) {
         if (err) {
             console.err
             res.send('-100') //Error with database Connection
-            return console.err
+            return
         } else if (user == null) {
             console.log('No User found')
-            return res.send('-4') //No User Found
+            res.send('-4')
+            return //No User Found
         } else {
+
+            //adding the coins; amount depending on coinfactor flag
             if (user.coins != null)
                 user.coins += (coins * user.coinFactor)
             else
                 user.coins = (coins * user.coinFactor)
+
+            //if coinfactor is bigger than one (--> benefit is used), reduce the amount
             if (user.coinFactor != 1) {
-                for (var benefit in user.benefits) {
-                    if (benefit.id == 4) {
-                        benefit.counter = benefit.counter - 1
+                for (var i = user.benefits.length - 1; 0 <= i; i--) {
+                    if (user.benefits[i].id == 4) {
+                        user.benefits[i].counter = user.benefits[i].counter - 1
+                        if (user.benefits[i].counter == 0)
+                            user.benefits[i].splice(i, 1)
                     }
                 }
             }
+
+            //saving user with new coin amount
             user.save(function (err) {
                 if (err) {
                     res.send('-110')
-                    return console.log(err)
+                    console.log(err)
+                    return
                 }
+
+                //set the flag in the game for the rating user 1, so that he hasn't have to rate the same game again
                 GameModel.findOne({
                     _id: gameId
                 }, function (err, game) {
@@ -199,49 +232,33 @@ var handleRating = function (req, res) {
                         res.send('-10')
                         return
                     }
-                    console.log('HandleRating Game-UserId: ' + game.userFound)
-                    console.log('HandeRating UserId: ' + _id)
                     if (game.userFound == _id) {
-                        GameModel.update({
-                            _id: gameId
-                        }, {
-                            $set: {
-                                ratedByUserSearched: 1
-                            }
-                        }, function (err) {
-                            if (err) {
-                                console.log(err)
-                                res.send('-110')
-                                return
-                            }
-                            console.log('HandleRating: Update UserSearched done')
-                            handleContactRequest(game.userFound, game.userSearching, stayInContact, res)
-                        })
+                        game.ratedByUserSearched = 1
                     } else {
-                        GameModel.update({
-                            _id: gameId
-                        }, {
-                            $set: {
-                                ratedByUserFound: 1
-                            }
-                        }, function (err) {
-                            if (err) {
-                                console.log(err)
-                                res.send('-110')
-                                return
-                            }
-                            console.log('HandleRating: Update UserFound done')
-                            handleContactRequest(game.userFound, game.userSearching, stayInContact, res)
-                        })
+                        game.ratedByUserFound = 1
                     }
+
+                    //saving
+                    game.save(function (err) {
+                        if (err) {
+                            console.log(err)
+                            res.send('-110')
+                            return
+                        }
+                        console.log('HandleRating: Update UserSearched done')
+
+                        //let the contact stuff be handled by the follwing method
+                        handleContactRequest(game.userFound, game.userSearching, stayInContact, res)
+                    })
                 })
             })
         }
     })
 }
 
+
 function handleContactRequest(userId, otherUserId, wishesToStayInContact, res) {
-    console.log('HANDLE CONTACT REQUEST called')
+    //check if a contact for those two users already exists
     ContactModel.findOne({
         $or: [
             {
@@ -257,6 +274,8 @@ function handleContactRequest(userId, otherUserId, wishesToStayInContact, res) {
             console.log(err)
             res.send('-100')
             return
+
+            //if no contact exists for the two users create a new one
         } else if (contact == null) {
             var newContact = new ContactModel({
                 firstUserId: userId,
@@ -276,6 +295,9 @@ function handleContactRequest(userId, otherUserId, wishesToStayInContact, res) {
                 return
             })
         } else {
+            //if the contact exists, check whether both want to stay in contact or not
+
+            //in case both want to stay in contact update the data and chatting can start
             if ((contact.verifiedByFirstUser == 1 || contact.verifiedBySecondUser == 1) && wishesToStayInContact) {
                 ContactModel.update({
                     _id: contact._id
@@ -293,6 +315,8 @@ function handleContactRequest(userId, otherUserId, wishesToStayInContact, res) {
                     res.send('1')
                 })
             } else {
+
+                //if at least one doesn't want to stay in contact, delete the contact
                 ContactModel.remove({
                     _id: contact._id
                 }, function (err) {
@@ -308,11 +332,12 @@ function handleContactRequest(userId, otherUserId, wishesToStayInContact, res) {
     })
 }
 
+
 var getGamesToRate = function (req, res) {
     var gamesToRate = []
-        //    allDone = false
-        //    var counter = 0
     var _id = req.param('_id')
+
+    //find games in which the user particitaped as user searching or userFound.
     GameModel.find({
         $or: [{
             userSearching: _id
@@ -328,8 +353,9 @@ var getGamesToRate = function (req, res) {
             res.send('-10')
             return
         } else {
-            var gameIdsFound = []
-            var gameIdsSearched = []
+
+            //if user hasn't rated a game in which he participated, add it to gamesToRateArray
+            //additionally add the other userId, so that client knows who should be rated
             for (var i = 0; i < games.length; i++) {
                 if (games[i].userFound == _id && games[i].ratedByUserFound == 0) {
                     gamesToRate.push({
@@ -348,27 +374,20 @@ var getGamesToRate = function (req, res) {
                 res.send('-10')
                 return
             }
+
+            //return array with games and otherUsers
             res.send(gamesToRate)
         }
     })
 }
 
-//function sendGamesToRateResponse(res, gamesToRate) {
-//    if (allDone) {
-//        if (gamesToRate.length == 0) {
-//            res.send('-10')
-//        } else {
-//            res.send(gamesToRate)
-//        }
-//        allDone = false
-//    }
-//}
-
+//test method
 var photoTest = function (req, res) {
     res.type('text/plain')
     res.sendFile('/home/whou/Data/Weihnachtsbaum.jpg')
 }
 
+//calculating distance between users denpending on longitude and latitude
 function getDistance(lat1, lon1, lat2, lon2, unit) {
     var radlat1 = Math.PI * lat1 / 180
     var radlat2 = Math.PI * lat2 / 180
