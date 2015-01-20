@@ -38,23 +38,72 @@ var getUsersCurrentlyPlayedWith = function (req, res) {
             return
         }
         var toReturn = []
-        console.log(data)
 
         //if both users of the contact verified the contact, add it to return-array
         for (var i = 0; i < data.length; i++) {
-            console.log('CONTACT: ' + data[i])
             var contact = data[i]
             if (contact.verifiedByFirstUser == 1 && contact.verifiedBySecondUser == 1) {
+                var otherUserId
                 if (contact.firstUserId == _id) {
-                    toReturn.push(contact.secondUserId)
+                    otherUserId = contact.secondUserId
                 } else {
-                    toReturn.push(contact.firstUserId)
+                    otherUserId = contact.firstUserId
+                }
+
+                //adding some useful data
+                UserModel.findOne({
+                    _id: otherUserId
+                }, function (err, user) {
+                    if (err) {
+                        toReturn.push('-100')
+                    } else if (user == null) {
+                        toReturn.push('-4')
+                    } else {
+                        var photo = -1
+                        for (var j = 0; j < user.photos.length; j++) {
+                            if (user.photos[j].isProfilPhoto == 1) {
+                                photo = user.photos[j].photoString
+                            }
+                        }
+                        toReturn.push({
+                            '_id': user._id,
+                            'username': user.username,
+                            'profilPhoto': photo
+                        })
+                    }
+                    //slice all unverified contacts and
+                    //return the array of users, the requesting user can chat with
+                    var toReturnNew = []
+                    if (toReturn.length == data.length) {
+                        for (var i = 0; i < toReturn.length; i++) {
+                            console.log(toReturn[i])
+                            if (toReturn[i] != '-18') {
+                                toReturnNew.push(toReturn[i])
+                            }
+                        }
+                        console.log(toReturnNew)
+                        res.send(toReturnNew)
+                    }
+                })
+            } else {
+                //placeholder if contact isn't verified yet
+                toReturn.push('-18')
+
+                //slice all unverified contacts and
+                //return the array of users, the requesting user can chat with
+                var toReturnNew = []
+                if (toReturn.length == data.length) {
+                    for (var i = 0; i < toReturn.length; i++) {
+                        console.log(toReturn[i])
+                        if (toReturn[i] != '-18') {
+                            toReturnNew.push(toReturn[i])
+                        }
+                    }
+                    console.log(toReturnNew)
+                    res.send(toReturnNew)
                 }
             }
         }
-
-        //return the array of users, the requesting user can chat with
-        res.send(toReturn)
     })
 }
 
@@ -83,14 +132,19 @@ var getPreviousMessages = function (req, res) {
         } else {
 
             //return the messages array of the contact (containing JSON objects with the textMessage, a timeStamp, and an identifier to know which of the users in the contact was the author of the message)
-            res.send(contact.messages)
+            res.send({
+                'messages': contact.messages,
+                'UID': _id,
+                'otherUser': otherUserId
+            })
         }
     })
 }
 
 var getMessagesLeft = function (req, res) {
-    var _id = req.param('id')
+    var _id = req.param('_id')
     var otherUserId = req.param('otherUser')
+    console.log('MESSAGES LEFT: ' + _id + ' ' + otherUserId)
 
     //fetching the contact
     ContactModel.findOne({
@@ -104,6 +158,7 @@ var getMessagesLeft = function (req, res) {
         ]
     }, function (err, contact) {
         if (err) {
+            console.log('MESSAGES LEFT ' + err)
             console.log(err)
             res.send('-100')
             return
@@ -111,12 +166,12 @@ var getMessagesLeft = function (req, res) {
             res.send('-12')
             return
         } else {
-
+            console.log('MESSAGES LEFT ' + contact)
             //sending back the messages the requesting user has left, by default 30
-            if (_id = contact.firstUserId)
-                res.send(contact.messagesLeftFirstUser)
+            if (_id == contact.firstUserId)
+                res.send('' + contact.messagesLeftFirstUser)
             else
-                res.send(contact.messagesLeftSecondUser)
+                res.send('' + contact.messagesLeftSecondUser)
         }
     })
 }
@@ -181,18 +236,7 @@ var sendMessage = function (req, res) {
                 res.send('-110')
                 return
             }
-            //2 part
-
-            //fetching pushId and calling sendPush-method
-            UserModel.findOne({
-                _id: otherUserId
-            }, function (err, user) {
-                if (err) {
-                    console.log(err)
-                    return
-                }
-                sendPush(user.pushId, 'Neue Nachticht erhalten!', message, 1, res)
-            })
+            sendPush(_id, 'Neue Nachticht erhalten!', message, otherUserId, res)
         })
     })
 }
@@ -224,12 +268,11 @@ var sendPush = function (userId, title, message, options, res) {
         push.addData('soundname', 'beep.wav') //Sound to play upon notification receipt - put in the www folder in app
         push.timeToLive = 3000;
 
-        if (options == 1) {
-            push.addData('userId', otherUserId)
+        if (options != 0) {
+            push.addData('userId', options)
         }
 
         sender.send(push, registrationIds, 4, function (result) {
-            console.log(result);
             res.send('1')
         })
     })

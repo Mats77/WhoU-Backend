@@ -27,7 +27,6 @@ const getPhotoPath = '/photo/get'
 const deletePhotoPath = '/photo/delete'
 const updateProfilPhotoPath = '/photo/profilPhoto'
 const logOutPath = '/logout'
-const deleteUserPath = '/delete'
 const usersCurrentlyPlayedWithPath = '/chat/list'
 const previousMessagesPath = '/chat/previousMessages'
 const messagesLeftPath = '/chat/messagesLeftPath'
@@ -35,6 +34,7 @@ const upgradeMessagesPath = '/chat/upgradeMessages'
 const sendMessagePath = '/chat/sendMessage'
 const searchStartedPushPath = '/chat/searchStartedPush'
 const sendStandardMessagePath = '/chat/sendStandardMessage'
+const deleteUserPath = '/registration/delete'
 
 //Implement each module
 const playModule = require('./PlayModule')
@@ -174,6 +174,10 @@ app.post(sendStandardMessagePath, cors(), function (req, res, next) {
 
 app.get('/test', function (req, res, next) {
     playModule.photoTest(req, res)
+})
+
+app.get(deleteUserPath, cors(), function (req, res, next) {
+    registrationModule.deleteUser(req, res)
 })
 
 //server starts

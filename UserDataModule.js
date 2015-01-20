@@ -61,7 +61,8 @@ var getUserData = function (req, res) {
 var getRecentEvents = function (req, res) {
     var _id = req.param('_id')
     var events = []
-
+    
+    var user_timeStamp = {}
     //searching all games in which he participated - whether as searching user or as found user
     GameModel.find({
         $or: [{
@@ -87,7 +88,7 @@ var getRecentEvents = function (req, res) {
             } else {
                 userIdOfUserPlayedWith = data[i].userSearching
             }
-
+            user_timeStamp[userIdOfUserPlayedWith] = data[i].timeStamp
             //...get its data from the db...
             UserModel.findOne({
                 _id: userIdOfUserPlayedWith
@@ -95,19 +96,24 @@ var getRecentEvents = function (req, res) {
                 if (err) {
                     events.push(err)
                 } else if (user != null) {
-
+                    var profilPhoto = -1
+                    for(var j=0; j<user.photos.length; j++){
+                        if(user.photos[j].isProfilPhoto == 1){
+                            profilPhoto = user.photos[j].photoString
+                        }
+                    }
                     //...and add the necessary data to the events array
                     events.push({
                         'type': 'played',
-                        'date': data.timeStamp,
+                        'date': user_timeStamp[user._id],
                         'user': user.username,
-                        'userId': user._id
+                        'userId': user._id,
+                        'profilPhoto': profilPhoto
                     })
                 } else {
                     //maybe the other player has been deleted since they played
                     events.push({
                         'type': 'played',
-                        'date': data.timeStamp,
                         'user': 'user deleted'
                     })
                 }
@@ -193,7 +199,7 @@ var savePhoto = function (req, res) {
                 })
 
                 //updating db-document
-                UserModel.save(function (err) {
+                user.save(function (err) {
                     if (err) {
                         res.send('-110')
                         return
@@ -278,6 +284,8 @@ var getPhoto = function (req, res) {
 
 var updateProfilPhoto = function (req, res) {
     var _id = req.body._id
+    var photoId = req.body.photoId
+    console.log('PROFIL PHOTO: _id ' + _id + ', photoId ' +photoId)
 
     UserModel.findOne({
         _id: _id
@@ -293,14 +301,17 @@ var updateProfilPhoto = function (req, res) {
 
             //searching through the fotos
             //setting the profilePhoto flag for the requested photo
-            for (var photo in user.photos) {
-                if (photo.id == req.body.photoId) {
-                    photo.isProfilPhoto = 1
-                } else {
-                    photo.isProfilPhoto = 0
-                }
+            for (var i = 0; i < user.photos.length; i++) {
+                console.log('Actual ID: ' + user.photos[i].id)
+                console.log(user.photos[i].id == photoId)
+                if (user.photos[i].id == photoId)
+                    user.photos[i].isProfilPhoto = 1
+                else
+                    user.photos[i].isProfilPhoto = 0
+                    
+                console.log(user.photos[i].id + ' ' +user.photos[i].isProfilPhoto)
             }
-
+            user.markModified('photos')
             //saving the updated user
             user.save(function (err) {
                 if (err) {

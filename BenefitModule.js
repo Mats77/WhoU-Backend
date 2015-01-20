@@ -122,6 +122,8 @@ var buyItem = function (req, res) {
 var upgradeMessageCount = function (req, res) {
     var _id = req.body._id
     var otherUserId = req.body.otherUser
+    console.log('UPGRADE: ' + _id)
+    console.log('UPGRADE: ' + otherUserId)
 
     //decreasing coins of requesting user
     UserModel.update({
@@ -137,28 +139,42 @@ var upgradeMessageCount = function (req, res) {
             return
         }
         //and upgrading messages left in contact model
-        ContactModel.update({
-                $or: [{
+        ContactModel.findOne({
+            $or: [
+                {
                     firstUserId: _id,
                     secondUserId: otherUserId
-        }, {
-                    firstUserId: otherUserId,
-                    secondUserId: _id
-        }]
-            }, {
-                $inc: {
-                    messagesLeftFirstUser: 30,
-                    messagesLeftSecondUser: 30
-                }
-            },
-            function (err) {
+                }, {
+                    secondUserId: _id,
+                    firstUserId: otherUserId
+            }
+        ]
+        }, function (err, contact) {
+            if (err) {
+                console.log(err)
+                res.send('-100')
+                return
+            }
+            if (contact == null) {
+                res.send('-12')
+                return
+            }
+            contact.messagesLeftFirstUser = contact.messagesLeftFirstUser + 30
+            contact.messagesLeftSecondUser = contact.messagesLeftSecondUser + 30
+
+            console.log(contact)
+            contact.markModified('messagesLeftFirstUser')
+            contact.markModified('messagesLeftSecondUser')
+
+            contact.save(function (err) {
                 if (err) {
-                    console.log(err)
                     res.send('-100')
+                    console.log(err)
                     return
                 }
-                res.send('1')
+                return ('1')
             })
+        })
     })
 }
 
@@ -208,34 +224,37 @@ var skipUser = function (req, res) {
                                     res.send('-4')
                                     return
                                 }
-                                console.log('user found ' + user)
 
                                 //decreasing the benefit count
+                                var benefitFound = false
                                 for (var i = user.benefits.length - 1; 0 <= i; i--) {
+                                    console.log(user.benefits[i])
                                     if (user.benefits[i].BID == 1  && user.benefits[i].count == 1) {
                                         user.benefits.splice(i)
+                                        benefitFound = true
                                     } else if (user.benefits[i].BID == 1 && user.benefits[i].count > 1) {
                                         user.benefits[i].count = user.benefits[i].count - 1
-                                    } else {
-                                        res.send('-18')
+                                        benefitFound = true
+                                    }
+                                }
+
+                                //3 part
+                                if (!benefitFound) {
+                                    res.send('-14')
+                                    return
+                                }
+                                //saving the user with decrased benefit amount
+                                user.save(function (err) {
+                                    if (err) {
+                                        console.log(err)
+                                        res.send('-110')
                                         return
                                     }
 
-                                    //3 part
-
-                                    //saving the user with decrased benefit amount
-                                    user.save(function (err) {
-                                        if (err) {
-                                            console.log(err)
-                                            res.send('-110')
-                                            return
-                                        }
-
-                                        //returning the newly matched user
-                                        console.log('Skip user returning: ' + result)
-                                        res.send(result)
-                                    })
-                                }
+                                    //returning the newly matched user
+                                    console.log('Skip user returning: ' + result)
+                                    res.send(result)
+                                })
                             })
                         }
                     })

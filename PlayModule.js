@@ -42,7 +42,6 @@ var init = function () {
 var play = function (req, res) {
     var _id = req.body._id
     var result = matchMe(_id, function (result) {
-        console.log('RESULT 1: ' + result.otherUserId)
 
         //check if matchingAlgorithm returned a user
         if (typeof result === 'object') {
@@ -62,9 +61,7 @@ var play = function (req, res) {
                     res.send('-110e')
                     return
                 }
-                console.log('New game saved')
                 result.gameId = newGame._id
-                console.log('RESULT SENT: ' + result)
 
                 //return game object to client
                 res.send(result)
@@ -104,17 +101,14 @@ function matchMe(_id, callback) {
                 console.log(err)
                 callback('-100')
             }
-            console.log('NEW PLAY ALGORITHM: Time Difference: ' + games)
             for (var i = 0; i < games.length; i++) {
-                console.log('NEW PLAY ALGORITHM: Time Difference: ' + games[i].timeStamp - Date.now())
-                if (games[i].timeStamp - Date.now() < (1000 * 60 * 60 * 24)) {
+                if (parseInt(new Date().getTime()) - games[i].timeStamp < (1000 * 60 * 60 * 24)) {
                     if (games[i].userSearching == _id)
                         ineligibleUsers.push(games[i].userFound)
                     else
                         ineligibleUsers.push(games[i].userSearching)
                 }
             }
-            console.log('NEW PLAY ALGORITHM: ineligibleUsers: ' + ineligibleUsers)
 
             //fetch users, which are not ineligible
             UserModel.find({
@@ -122,10 +116,9 @@ function matchMe(_id, callback) {
                     $nin: ineligibleUsers
                 }
             }, function (err, users) {
-                console.log('NEW PLAY ALGORITHM: Users: ' + users)
                 if (err) {
                     console.log(err)
-                    callback('-100d')
+                    callback('-100')
                 }
 
                 //add visible and nearby users to eligibleUsers
@@ -136,13 +129,11 @@ function matchMe(_id, callback) {
                             eligibleUsers.push(users[i])
                     }
                 }
-                console.log('NEW PLAY ALGORITHM: ElibibleUsers: ' + eligibleUsers)
 
                 //if there are one or more eligible Users return a random one
                 if (eligibleUsers.length > 0) {
                     var otherPlayer = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)]
 
-                    console.log('NEW PLAY ALGORITHM: otherPlayer: ' + otherPlayer)
 
                     var toReturn = {
                         'username': otherPlayer.username,
@@ -156,8 +147,6 @@ function matchMe(_id, callback) {
                             'contentType': null
                         }
                     }
-                    console.log('NEW PLAY ALGORITHM returning: ' + toReturn)
-                    console.log('NEW PLAY ALGORITHM returning: ' + toReturn.username)
                     callback(toReturn)
 
                     //signal, that no users can be matched
