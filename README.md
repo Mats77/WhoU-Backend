@@ -92,8 +92,8 @@ and from thenon does nothing else than routing the request and response objects.
 #The Modules
 **The Registration Module:**
 
-It seems obvious to start with this module, because it is the first module, which the users have to interact with. In its init() method a connection to the mongodb is opened and the UserSchema is declared. In Addition to that it offers the methods "register" and "delete".
-The register method creates a new user document, using the arguments passed by the client request, and responds with the id, which is given by the monogdb. Before creating a user it's verified, that the mail isn't in use yet. To avoid spam users it's allowed to have only one user per mail-account. Actually there is a second way to create a user. You can register and therefore also login with your facebook account. Most of this is handled client-sided. The only serverside-difference is, that xxxxxxx.
+It seems obvious to start with this module, because it is the first module, which the users have to interact with. In its init() method a connection to the mongodb is opened and the UserSchema is declared. In addition to that it offers the methods "register" and "delete".
+The register method creates a new user document, using the arguments passed by the client's request, and responds with the id, which is given by the monogdb. Before creating a user it's verified, that the mail isn't in use yet. To avoid spam users it's allowed to have only one user per mail-account. Actually there is a second way to create a user. You can register and therefore also login with your facebook account. Most of this is handled client-sided. The only serverside-difference is, that there are some other arguments in the document. For example the password field only contains: 'facebook'.
 
 The second method is "delete", which takes a userId as argument and deletes the user.
 
@@ -122,14 +122,14 @@ var loginWithMail = function (req, res) {
 }
 ```
 
-This 20-digits-long random key is stored in the localStorage of the client. With each following start of the app the userId and the sessionkey are transmitted to the server automatically. In those cases the users seems to be automatically logged in. Only when he logs out in the settings screen he has to reinsert his credentials.
+This 20-digits-long random key is stored in the localStorage of the client. With each following start of the app the userId and the sessionkey are transmitted to the server automatically. In those cases the users are automatically logged in. Only when he logs out in the settings screen he has to reinsert his credentials.
 
 With a succesfull sessionkey-login all relevant userdata are sent to the client, so that the personal homescreen can be set up properly. Since we expect the users to have not so many personal data stored yet, with a username login the only thing returned is the userid with the sessionkey. All necessary data are requested seperately, which will be described in the next section.
 
 
 **The UserData Module:**
 
-This UserData Module is a huge and important one. It offers nine APIs which serve the purpose to the CRUD methods of the user data. For example there are the savePhoto, getPhoto, deletePhoto and updateProfilPhoto methods. The client converts a photo, that is stored on the users phone or just has been taken by the user, into a string. This string is transmitted to the server and stored in the user.photos array. With the photoString an id, which is unique for one user but not for all photos is stored. In addition to that the photo object contains a isProfilPhoto flag which is set to one for the first photo automatically. 
+This UserData Module is a huge and important one. It offers nine APIs which serve the purpose of CRUD methods. For example there are the savePhoto, getPhoto, deletePhoto and updateProfilPhoto methods. The client converts a photo, that is stored on the users phone or just has been taken by the user, into a string. This string is transmitted to the server and stored in the user.photos array. With the photoString an id, which is unique for one user but not for all photos, is stored. In addition to that the photo object contains a isProfilPhoto flag which is set to one for the first photo automatically. 
 
 ```js
 //requesting the user and error handling
@@ -164,7 +164,7 @@ UpdateGPS, insertPushId and changeModus are very generic functions, which take t
 
 **The Play Module:**
 
-The play Module might be the most important one, because it contains the very core of our application, which is the player-matching-algorithm. Furthermore the logic to handle the ratings and therefore also the contact craetion, the algorithm which searches for the user's games, that haven't been rated are located in this module.
+The play Module might be the most important one, because it contains the very core of our application, which is the player-matching-algorithm. Furthermore the logic to handle the ratings and therefore also the contact creation, the algorithm which searches for the user's games, that haven't been rated are located in this module.
 
 We thought of the following three arguments a player should have to be an eligible match. The first argument is, that the possible match hasn't played with the searching player for at least the last 24 hours. To assure that, we lookup all playing partners of the searching player of the last 24 hours an add them to an ineligible-list.
 
@@ -181,7 +181,7 @@ for (var i = 0; i < games.length; i++) {
 }
 //...second argument...
 ```
-Secondly the destince between those two users shouldn't be more than 500 metres. Therefore we gather the latitude and longitude data every xxxx minutes. Those values will be updated, so that we are not collecting those data to create geoprofiles of our users. To narrow the number of possible matches we fetch all users from the mongodb, which are not ineligible because of their last game. After this step we check the distance between each pair. If the distance is below 500 metres the visibility of the possible match is checked. If both values are true, we found a possible match and the player is added to an eligible-list. As soon as all possible matches are in this list one player is picked randomly.
+Secondly the destince between those two users shouldn't be more than 500 metres. Therefore we gather the latitude and longitude data every single minute. Those values will be updated, so that we are not collecting those data to create geoprofiles of our users. To narrow the number of possible matches we fetch all users from the mongodb, which are not ineligible because of their last game. After this step we check the distance between each pair. If the distance is below 500 metres, the visibility of the possible match is checked. If both values are true, we found a possible match and the player is added to an eligible-list. As soon as all possible matches are in this list one player is picked randomly.
 
 ```js
 //...first argument...
@@ -203,7 +203,7 @@ if (eligibleUsers.length > 0) {
 
 This algorithm can be called either by the initial play request or by the skip-player benfit, which is going to be described in the next section.
 
-The second important part in this module is about what's happening after the game has been finished. We assume, that a game lasts about 30 minutes, so that we don't ask our users to confirm the end of the game. The client asks regularly if there are any not yet rated games on the server. If that is the case an array of those games is answered. To find out whether there are games, which have to be rated, all games, the requesting player played - either as the one searching or the one searched - are fetched from the database. Those, which are older than 30 minutes and not rated by him are sent back.
+The second important part in this module is about what's happening after the game has been finished. We assume, that a game lasts about 30 minutes, so that we don't ask our users to confirm the end of the game. The client asks regularly if there are any not yet rated games on the server. If that is the case an array of those games is answered. To find out whether there are games, which have to be rated, all games, the requesting player played - either as the one searching or the one searched - are fetched from the database. Those, which are not rated by him are sent back.
 
 ```js
 //...fetching the games of the requesting user....
@@ -225,7 +225,7 @@ for (var i = 0; i < games.length; i++) {
 //...sending back the array...
 ```
 
-In case the client receives at least one game to rate, the user can see with whome he played and can rate some things (more detailed description in the client). Afterwards the client calculates how many coins the rated user gets and sends a flag whether there is a whish to stac in contact. To handle this the "handleRating" method is used. In the first part of this method the coins are added to the user's account.
+In case the client receives at least one game to rate, the user can see with whome he played and can rate some things (more detailed description in the client). Afterwards the client calculates how many coins the rated user gets and sends a flag whether there is a whish to stay in contact. To handle this the "handleRating" method is used. In the first part of this method the coins are added to the user's account.
 
 ```js
 //...fetching user from database....
@@ -268,7 +268,7 @@ else if (contact == null) {
 }
 ```
 
-In case he is not the first one the method has to handle two different possibilities again. The first user might want to stay in contact or not. If he doesn't want to stay in contact the contact document can be deleted and the method is done again. Otherwise we have to check if the second user wants to stay in contact too. Assuming that is true, the contact document is updated and the chatting can begin. Alternatively the document is deleted.
+In case he is not the first one the method has to handle two different possibilities again. The first user might want to stay in contact or not. If he doesn't want to stay in contact the contact document can be deleted and the method is done. Otherwise we have to check if the second user wants to stay in contact too. Assuming that is true, the contact document is updated and the chatting can begin. Alternatively the document is deleted.
 
 ```js
 
@@ -291,7 +291,7 @@ Additionally data like the messages, which have already been sent between those 
 
 Since users have only a decent amount of messages - 30 by default - to send in each chat, an API to request the messages left is necessary. This API takes the ids of the requesting user as well as of the chat partner, looks the proper data up in the database and sends the answer back to the client.
 
-That leads us to the second part of the chat module. Most important here is the "sendMessage" method. The first steps of this method are to find the proper user, who wants to send the message and the contact that connects him to his chat partner. Then we have to check, if he still have a message left. Otherwise an error occurs.
+That leads us to the second part of the chat module. Most important here is the "sendMessage" method. The first steps of this method are to find the proper user, who wants to send the message and the contact that connects him to his chat partner. Then we have to check, if he still has a message left. Otherwise an error occurs.
 
 ```js
 //...fetching data from database...
@@ -308,7 +308,7 @@ if (contact.firstUserId == _id) {
 //...sending the message...
 ```
 
-In case he still has enough messages left and no errors occur updating the database, a new request is executed to find the pushId of the user, that has to be notified. Finally the push notification is set up and sent. At tho current state of development we only support push notifications to android users, because we didn't have a possibility to test this on an iOS device. Sending the push notification is done using the Google Cloud Messaging Service (GCM). Firstly the message object is created before it is filled with its payload and finally sent.
+In case he still has enough messages left and no errors occur updating the database, a new request is executed to find the pushId of the user, that has to be notified. Finally the push notification is set up and sent. At the current state of development we only support push notifications to android users, because we didn't have a possibility to test this on an iOS device. Sending the push notification is done using the Google Cloud Messaging Service (GCM). Firstly the message object is created before it is filled with its payload and finally sent.
 
 ```js
 //creating message and sender object
@@ -337,11 +337,11 @@ In addition to those messages described above we added two more APIs, that use p
 
 **The Benefit Module:**
 
-Benefits can be bougth by users, who played who-U enough to earn a decent amount of coins. With benefits the convenience of the user experience can be increased a bit. For example more messages can be sent or users, who were matched can be skipped.
+Benefits can be bougth by users, who played who-U enough to earn a decent amount of coins. With benefits the convenience of the user experience can be increased a bit. For example more messages can be sent or users, who were matched, can be skipped.
 
 Firstly this module contains a method "getAllBenefits", which just fetches all the different benefit documents from the benefit collection out of the mongodb and returns them as an JSON array to the client. The answer contains data like the name, price, description and id of the benefits.
 
-Secondly there are two methods in this module which handle the purchasing process of benefits and one, that handles the benefit effects. Why we needed two different methods for that is going to be explained in the following. Obviously there is the "buyItem" method. It is responsible for the purchasing of all benefits except upgrading the messagesleft. The reason is, that further information are needed for the lastly mentioned benefit and it isn't stored but immediately redeemed.
+Secondly there are two methods in this module which handles the purchasing process of benefits and one, that handles the benefit effects. Why we needed two different methods for that is going to be explained in the following. Obviously there is the "buyItem" method. It is responsible for the purchasing of all benefits except upgrading the messagesleft. The reason is, that further information are needed for the lastly mentioned benefit and it isn't stored but immediately redeemed.
 
 The first part of "buyItem" fetches the requesting user and the wished benefit from the different collections in the database. If the process was succesfull, the cost of the benefits are compared to amount of the user's coins. Actually this comparison is already done in the client, but we thought it to be clever to use some defensive programming here to avoid exploits, which can occur due to network latency or something else. 
 
@@ -350,7 +350,7 @@ if (user.coins >= (item.price * req.body.count)) {
             user.coins = (user.coins - (Number(item.price) * Number(req.body.count)))
 ```
 
-Finally in the third part the benefits array in the user model gets updated. We xxxxx (UNTERSCHEIDEN) whether the bought item is a benefit, that the user had at least once before or not. Depending on that we either have to increase the counter or add a new benefit. A special one in this case is the more points pre game benefit because you immediately get 10 counts with one purchase of the benefit.
+Finally in the third part the benefits array in the user model gets updated. We differentiate whether the bought item is a benefit, that the user had at least once before or not. Depending on that we either have to increase the counter or add a new benefit. A special one in this case is the more points pre game benefit because you immediately get 10 counts with one purchase of the benefit.
 
 ```js
 
@@ -382,7 +382,7 @@ if (!itemAlreadyExistsAtLeastOnce) {
 
 Since we need additional data to update the message count we created a specific API for that purpose. It takes the userId of the user who buys the messages and the id of the user he wants to send the additional messages to. Afterwards a simple increasing update of the proper contact document is done in the database.
 
-A little more complex is the redemption of the skip user benefit, which is the last method in this module. The complexity arise with the fact that the game document is created after the two players are matched. So the user can't skip his match before the game is created. Therefore we need the gameId to keep the game collection consistent when reddeming this benefit. That's what's actually done in the first method's part. The second part updates the requesting user's benefit count and sends the answer.
+A little more complex is the redemption of the skip user benefit, which is the last method in this module. The complexity arise with the fact that the game document is created after the two players are matched. So the user can't skip his match before the game is created. Therefore we need the gameId to keep the game collection consistent when redeeming this benefit. That's what's actually done in the first method's part. The second part updates the requesting user's benefit count and sends the answer.
 
 
 #Error Codes
