@@ -89,6 +89,7 @@ var register = function (req, res) {
 //not implemented in client, only for testing purposes
 var deleteUser = function (req, res) {
     var _id = req.param('_id')
+    console.log('DELETE: ' + _id)
     UserModel.remove({
         _id: _id
     }, function (err) {

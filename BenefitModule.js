@@ -162,7 +162,6 @@ var upgradeMessageCount = function (req, res) {
             contact.messagesLeftFirstUser = contact.messagesLeftFirstUser + 30
             contact.messagesLeftSecondUser = contact.messagesLeftSecondUser + 30
 
-            console.log(contact)
             contact.markModified('messagesLeftFirstUser')
             contact.markModified('messagesLeftSecondUser')
 
@@ -228,7 +227,6 @@ var skipUser = function (req, res) {
                                 //decreasing the benefit count
                                 var benefitFound = false
                                 for (var i = user.benefits.length - 1; 0 <= i; i--) {
-                                    console.log(user.benefits[i])
                                     if (user.benefits[i].BID == 1  && user.benefits[i].count == 1) {
                                         user.benefits.splice(i)
                                         benefitFound = true
@@ -252,7 +250,6 @@ var skipUser = function (req, res) {
                                     }
 
                                     //returning the newly matched user
-                                    console.log('Skip user returning: ' + result)
                                     res.send(result)
                                 })
                             })

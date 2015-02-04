@@ -36,6 +36,9 @@ var getUsersCurrentlyPlayedWith = function (req, res) {
             console.log(err)
             res.send('-100')
             return
+        } else if (data.length == 0) {
+            res.send('-11')
+            return
         }
         var toReturn = []
 
@@ -57,6 +60,7 @@ var getUsersCurrentlyPlayedWith = function (req, res) {
                     if (err) {
                         toReturn.push('-100')
                     } else if (user == null) {
+                        console.log('PREVIOUS NONE FOUND')
                         toReturn.push('-4')
                     } else {
                         var photo = -1
@@ -71,17 +75,18 @@ var getUsersCurrentlyPlayedWith = function (req, res) {
                             'profilPhoto': photo
                         })
                     }
-                    //slice all unverified contacts and
                     //return the array of users, the requesting user can chat with
-                    var toReturnNew = []
                     if (toReturn.length == data.length) {
+                        var toReturnNew = []
                         for (var i = 0; i < toReturn.length; i++) {
-                            console.log(toReturn[i])
                             if (toReturn[i] != '-18') {
                                 toReturnNew.push(toReturn[i])
                             }
                         }
-                        console.log(toReturnNew)
+                        if (toReturnNew.length == 0) {
+                            res.send('-11')
+                            return
+                        }
                         res.send(toReturnNew)
                     }
                 })
@@ -91,15 +96,17 @@ var getUsersCurrentlyPlayedWith = function (req, res) {
 
                 //slice all unverified contacts and
                 //return the array of users, the requesting user can chat with
-                var toReturnNew = []
                 if (toReturn.length == data.length) {
+                    var toReturnNew = []
                     for (var i = 0; i < toReturn.length; i++) {
-                        console.log(toReturn[i])
                         if (toReturn[i] != '-18') {
                             toReturnNew.push(toReturn[i])
                         }
                     }
-                    console.log(toReturnNew)
+                    if (toReturnNew.length == 0) {
+                        res.send('-11')
+                        return
+                    }
                     res.send(toReturnNew)
                 }
             }
@@ -144,7 +151,6 @@ var getPreviousMessages = function (req, res) {
 var getMessagesLeft = function (req, res) {
     var _id = req.param('_id')
     var otherUserId = req.param('otherUser')
-    console.log('MESSAGES LEFT: ' + _id + ' ' + otherUserId)
 
     //fetching the contact
     ContactModel.findOne({
@@ -158,7 +164,6 @@ var getMessagesLeft = function (req, res) {
         ]
     }, function (err, contact) {
         if (err) {
-            console.log('MESSAGES LEFT ' + err)
             console.log(err)
             res.send('-100')
             return
@@ -166,7 +171,6 @@ var getMessagesLeft = function (req, res) {
             res.send('-12')
             return
         } else {
-            console.log('MESSAGES LEFT ' + contact)
             //sending back the messages the requesting user has left, by default 30
             if (_id == contact.firstUserId)
                 res.send('' + contact.messagesLeftFirstUser)
@@ -236,12 +240,12 @@ var sendMessage = function (req, res) {
                 res.send('-110')
                 return
             }
-            sendPush(_id, 'Neue Nachticht erhalten!', message, otherUserId, res)
+            sendPush(otherUserId, 'New Message!', message, res)
         })
     })
 }
 
-var sendPush = function (userId, title, message, options, res) {
+var sendPush = function (userId, title, message, res) {
 
     //fetching user to get his pushId
     UserModel.findOne({
@@ -268,10 +272,6 @@ var sendPush = function (userId, title, message, options, res) {
         push.addData('soundname', 'beep.wav') //Sound to play upon notification receipt - put in the www folder in app
         push.timeToLive = 3000;
 
-        if (options != 0) {
-            push.addData('userId', options)
-        }
-
         sender.send(push, registrationIds, 4, function (result) {
             res.send('1')
         })
@@ -281,12 +281,12 @@ var sendPush = function (userId, title, message, options, res) {
 //convenience pushes while user is searching
 var pushSearchStarted = function (req, res) {
     var otherUserId = req.body._id
-    sendPush(otherUserId, 'Someone is seaching for you!', 'Attention it gets ', 0, res)
+    sendPush(otherUserId, 'Someone is seaching for you!', 'Be excited ', res)
 }
 
 var sendStandardMessage = function (req, res) {
     var otherUserId = req.body._id
-    sendPush(otherUserId, "You can't be found!", 'Do something to help...', 0, res)
+    sendPush(otherUserId, "You can't be found!", 'Do something to help...', res)
 }
 
 exports.getUsersCurrentlyPlayedWith = getUsersCurrentlyPlayedWith

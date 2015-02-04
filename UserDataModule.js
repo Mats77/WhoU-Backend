@@ -61,9 +61,9 @@ var getUserData = function (req, res) {
 var getRecentEvents = function (req, res) {
     var _id = req.param('_id')
     var events = []
-    
+
     var user_timeStamp = {}
-    //searching all games in which he participated - whether as searching user or as found user
+        //searching all games in which he participated - whether as searching user or as found user
     GameModel.find({
         $or: [{
             userSearching: _id
@@ -97,8 +97,8 @@ var getRecentEvents = function (req, res) {
                     events.push(err)
                 } else if (user != null) {
                     var profilPhoto = -1
-                    for(var j=0; j<user.photos.length; j++){
-                        if(user.photos[j].isProfilPhoto == 1){
+                    for (var j = 0; j < user.photos.length; j++) {
+                        if (user.photos[j].isProfilPhoto == 1) {
                             profilPhoto = user.photos[j].photoString
                         }
                     }
@@ -151,6 +151,7 @@ var updateGPS = function (req, res) {
     var _id = req.body._id
     var longitude = req.body.longitude
     var latitude = req.body.latitude
+    console.log('UPDATING GPS: + ' + _id + ' lat: ' + latitude + ' long: ' + longitude)
 
     //single db update-document-query
     UserModel.update({
@@ -285,7 +286,7 @@ var getPhoto = function (req, res) {
 var updateProfilPhoto = function (req, res) {
     var _id = req.body._id
     var photoId = req.body.photoId
-    console.log('PROFIL PHOTO: _id ' + _id + ', photoId ' +photoId)
+    console.log('PROFIL PHOTO: _id ' + _id + ', photoId ' + photoId)
 
     UserModel.findOne({
         _id: _id
@@ -308,8 +309,8 @@ var updateProfilPhoto = function (req, res) {
                     user.photos[i].isProfilPhoto = 1
                 else
                     user.photos[i].isProfilPhoto = 0
-                    
-                console.log(user.photos[i].id + ' ' +user.photos[i].isProfilPhoto)
+
+                console.log(user.photos[i].id + ' ' + user.photos[i].isProfilPhoto)
             }
             user.markModified('photos')
             //saving the updated user

@@ -3,6 +3,7 @@ var db
 var UserModel
 var GameModel
 var ContactModel
+var TaskModel
 
 //db initialization, and setting up Game and Contact-Schema
 var init = function () {
@@ -24,6 +25,11 @@ var init = function () {
             timeStamp: Number
         })
         GameModel = mongoose.model('Game', gameSchema)
+
+        var taskSchema = mongoose.Schema({
+            task: String
+        })
+        TaskModel = mongoose.model('Task', taskSchema)
 
         var contactSchema = mongoose.Schema({
             firstUserId: String,
@@ -85,8 +91,10 @@ function matchMe(_id, callback) {
         if (err) {
             console.log(err)
             callback('-100')
+            return
         } else if (user == null) {
             callback('-4')
+            return
         }
 
         //adding users recently played with to ineligible users
@@ -100,8 +108,12 @@ function matchMe(_id, callback) {
             if (err) {
                 console.log(err)
                 callback('-100')
+                return
             }
+            console.log('GAMES: ' + games.length)
             for (var i = 0; i < games.length; i++) {
+                console.log('TIME DIFFERENCE:')
+                console.log(parseInt(new Date().getTime()) - games[i].timeStamp)
                 if (parseInt(new Date().getTime()) - games[i].timeStamp < (1000 * 60 * 60 * 24)) {
                     if (games[i].userSearching == _id)
                         ineligibleUsers.push(games[i].userFound)
@@ -119,12 +131,15 @@ function matchMe(_id, callback) {
                 if (err) {
                     console.log(err)
                     callback('-100')
+                    return
                 }
 
                 //add visible and nearby users to eligibleUsers
                 var eligibleUsers = []
                 for (var i = 0; i < users.length; i++) {
-                    if (getDistance(user.latitude, user.longitude, users[i].latitude, users[i].longitude, 'K') < 500) {
+                    console.log('PLAY USER')
+                    console.log(user)
+                    if (getDistance(user.latitude, user.longitude, users[i].latitude, users[i].longitude, 'K') < 0.5) {
                         if (users[i].visible == 1)
                             eligibleUsers.push(users[i])
                     }
@@ -134,24 +149,35 @@ function matchMe(_id, callback) {
                 if (eligibleUsers.length > 0) {
                     var otherPlayer = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)]
 
-
-                    var toReturn = {
-                        'username': otherPlayer.username,
-                        'otherUserId': otherPlayer._id,
-                        'longitude': otherPlayer.longitude,
-                        'latitude': otherPlayer.latitude,
-                        'task': 'Finde heraus:;Eat a Döner;Find out Name', //first for task, following for list-items
-                        'taskType': 1, //0 for text, 1 for list
-                        'image': {
-                            'data': null,
-                            'contentType': null
+                    TaskModel.find({}, function (err, tasks) {
+                        if (err) {
+                            console.log(err)
+                            callback('-100')
+                            return
                         }
-                    }
-                    callback(toReturn)
+                        var task = tasks[Math.floor(Math.random() * tasks.length)].task
+
+                        var toReturn = {
+                            'username': otherPlayer.username,
+                            'otherUserId': otherPlayer._id,
+                            'longitude': otherPlayer.longitude,
+                            'latitude': otherPlayer.latitude,
+                            'task': task, //first for task, following for list-items
+                            'taskType': 0, //0 for text, 1 for list
+                            'image': {
+                                'data': null,
+                                'contentType': null
+                            }
+                        }
+                        callback(toReturn)
+                        return
+
+                    })
 
                     //signal, that no users can be matched
                 } else {
                     callback('-1')
+                    return
                 }
             })
 
@@ -177,7 +203,31 @@ var handleRating = function (req, res) {
             res.send('-100') //Error with database Connection
             return
         } else if (user == null) {
-            console.log('No User found')
+            console.log('No User found --- Deleted')
+            GameModel.findOne({
+                _id: gameId
+            }, function (err, game) {
+                if (err) {
+                    console.log(err)
+                    res.send('-100')
+                    return
+                } else if (game == null) {
+                    res.send('-19')
+                    return
+                }
+                if (game.userFound == _id) {
+                    game.ratedByUserFound = 1
+                } else {
+                    game.ratedByUserSearched = 1
+                }
+                game.save(function (err) {
+                    if (err) {
+                        res.send('-110')
+                        return
+                    }
+                    res.send('1')
+                })
+            })
             res.send('-4')
             return //No User Found
         } else {
